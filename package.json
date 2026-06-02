@@ -1,0 +1,21 @@
+{
+  "name": "safeconstruct",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portable, blockchain-based safety credential system for construction workers.",
+  "workspaces": [
+    "contracts",
+    "web"
+  ],
+  "scripts": {
+    "chain": "npm --workspace contracts run node",
+    "contracts:build": "npm --workspace contracts run build",
+    "contracts:test": "npm --workspace contracts run test",
+    "contracts:deploy:local": "npm --workspace contracts run deploy:local",
+    "web:dev": "npm --workspace web run dev",
+    "db:push": "npm --workspace web run db:push"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

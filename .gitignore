@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Secrets & environment
+.env
+.env.local
+*.local
+
+# Next.js
+web/.next/
+web/out/
+web/next-env.d.ts
+
+# Hardhat
+contracts/artifacts/
+contracts/cache/
+contracts/typechain-types/
+
+# Prisma / local DB
+web/prisma/*.db
+web/prisma/*.db-journal
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
