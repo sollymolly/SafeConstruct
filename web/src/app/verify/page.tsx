@@ -43,59 +43,85 @@ export default function VerifyPage() {
 
   return (
     <section>
-      <h1>Verify a worker</h1>
-      <p className="lead">
-        Look up a worker and confirm their safety credentials against the blockchain.
-      </p>
+      <div className="search-header">
+        <h1>Global Site Verification</h1>
+        <p className="lead">
+          Instantly query the blockchain to cryptographically confirm any incoming worker's safety credentials and licenses.
+        </p>
 
-      <form onSubmit={run} className="card form">
-        <label>
-          Worker email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="worker@example.com"
-            required
-          />
-        </label>
-        <button disabled={busy}>{busy ? "Checking the chain…" : "Verify"}</button>
-      </form>
+        <form onSubmit={run} className="card form" style={{ padding: '2rem', display: 'flex', flexDirection: 'row', alignItems: 'flex-end', gap: '1rem' }}>
+          <label style={{ flex: 1, textAlign: 'left' }}>
+            Worker Identifier (Email)
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="worker@example.com"
+              required
+            />
+          </label>
+          <button disabled={busy} style={{ minWidth: '160px', height: '44px' }}>
+            {busy ? <span className="spinner"></span> : "Scan Blockchain"}
+          </button>
+        </form>
+      </div>
 
-      {results &&
-        (worker ? (
-          <>
-            <h2>
-              {worker.name}{" "}
-              <small className="who">
-                {worker.address.slice(0, 6)}…{worker.address.slice(-4)}
-              </small>
-            </h2>
-            {results.length === 0 ? (
-              <p>No credentials on record.</p>
-            ) : (
-              <ul className="list">
-                {results.map((c) => (
-                  <li key={c.credentialId} className="card row between">
+      {results && (
+        <div style={{ marginTop: '4rem' }}>
+          {worker ? (
+            <div className="dashboard-layout">
+              <aside>
+                <div className="card">
+                  <h3>Subject Verified</h3>
+                  <div className="form" style={{ marginTop: '1rem' }}>
                     <div>
-                      <strong>{c.title}</strong>
-                      <br />
-                      <small>
-                        {c.credentialType} · {c.issuerOrg}
-                        {c.expiresAt
-                          ? ` · expires ${new Date(c.expiresAt * 1000).toLocaleDateString()}`
-                          : ""}
-                      </small>
+                      <small>Full Name</small>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{worker.name}</div>
                     </div>
-                    <span className={`badge ${BADGE[c.status] ?? ""}`}>{c.status}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        ) : (
-          <p className="msg">No worker found for that email.</p>
-        ))}
+                    <div>
+                      <small>Cryptographic Anchor</small>
+                      <div className="who" style={{ marginTop: '0.25rem' }}>
+                        {worker.address.slice(0, 8)}…{worker.address.slice(-6)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+
+              <main>
+                <h2 style={{ marginTop: 0 }}>Verification Results</h2>
+                {results.length === 0 ? (
+                  <div className="empty-state">
+                    <h3>Clear Record</h3>
+                    <p>No safety credentials were found on the blockchain for this worker.</p>
+                  </div>
+                ) : (
+                  <ul className="list">
+                    {results.map((c) => (
+                      <li key={c.credentialId} className="card row between">
+                        <div className="list-item-content">
+                          <strong style={{ fontSize: '1.1rem' }}>{c.title}</strong>
+                          <small>
+                            {c.credentialType} • Issued by {c.issuerOrg}
+                            {c.expiresAt ? ` • Expires ${new Date(c.expiresAt * 1000).toLocaleDateString()}` : ""}
+                          </small>
+                        </div>
+                        <span className={`badge ${BADGE[c.status] ?? ""}`}>{c.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </main>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <span style={{ fontSize: '3rem' }}>❌</span>
+              <h3>Verification Failed</h3>
+              <p>No worker profile or cryptographic anchor exists for <strong>{email}</strong>.</p>
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }

@@ -15,12 +15,11 @@ export default function IssuerPage() {
   const [me, setMe] = useState<Me>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
 
-  // sign-in fields
   const [email, setEmail] = useState("");
   const [org, setOrg] = useState("");
 
-  // issue form
   const [workerEmail, setWorkerEmail] = useState("");
   const [credentialType, setCredentialType] = useState("OSHA-30");
   const [title, setTitle] = useState("OSHA 30-Hour Construction Safety");
@@ -37,6 +36,7 @@ export default function IssuerPage() {
     e.preventDefault();
     setBusy(true);
     setMsg("");
+    setError("");
     const r = await fetch("/api/auth", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -44,7 +44,7 @@ export default function IssuerPage() {
     });
     const d = await r.json();
     setBusy(false);
-    if (d.error) return setMsg(d.error);
+    if (d.error) return setError(d.error);
     setMe(d.user);
   }
 
@@ -59,6 +59,7 @@ export default function IssuerPage() {
     e.preventDefault();
     setBusy(true);
     setMsg("");
+    setError("");
     const r = await fetch("/api/credentials", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -66,8 +67,8 @@ export default function IssuerPage() {
     });
     const d = await r.json();
     setBusy(false);
-    if (d.error) return setMsg(d.error);
-    setMsg(`Issued ✓  (tx ${String(d.credential.txHash).slice(0, 12)}…)`);
+    if (d.error) return setError(d.error);
+    setMsg(`Credential successfully minted (Tx: ${String(d.credential.txHash).slice(0, 12)}…)`);
     loadIssuedFor(workerEmail);
   }
 
@@ -80,12 +81,12 @@ export default function IssuerPage() {
 
   if (!me || me.role !== "ISSUER") {
     return (
-      <section>
-        <h1>Issuer sign-in</h1>
-        <p className="lead">Training providers issue safety credentials to workers.</p>
+      <section className="auth-container">
+        <h1>Issuer Portal</h1>
+        <p className="lead">Authorized training providers dashboard.</p>
         <form onSubmit={signIn} className="card form">
           <label>
-            Organization name
+            Organization Name
             <input
               value={org}
               onChange={(e) => setOrg(e.target.value)}
@@ -94,7 +95,7 @@ export default function IssuerPage() {
             />
           </label>
           <label>
-            Email
+            Authorized Email
             <input
               type="email"
               value={email}
@@ -103,8 +104,10 @@ export default function IssuerPage() {
               required
             />
           </label>
-          <button disabled={busy}>{busy ? "…" : "Sign in as issuer"}</button>
-          {msg && <p className="msg">{msg}</p>}
+          <button disabled={busy}>
+            {busy ? <span className="spinner"></span> : "Sign In to Dashboard"}
+          </button>
+          {error && <p className="msg error">{error}</p>}
         </form>
       </section>
     );
@@ -112,70 +115,90 @@ export default function IssuerPage() {
 
   return (
     <section>
-      <div className="row between">
-        <h1>Issue credentials</h1>
-        <span className="who">
-          {me.name} · {me.address?.slice(0, 6)}…{me.address?.slice(-4)}
-        </span>
+      <div className="row between" style={{ marginBottom: '2rem' }}>
+        <div>
+          <h1>Dashboard</h1>
+          <p className="lead" style={{ margin: 0 }}>Manage and mint worker credentials.</p>
+        </div>
+        <div className="who" style={{ textAlign: 'right' }}>
+          <strong>{me.name}</strong><br/>
+          {me.address?.slice(0, 6)}…{me.address?.slice(-4)}
+        </div>
       </div>
 
-      <form onSubmit={issue} className="card form">
-        <label>
-          Worker email
-          <input
-            type="email"
-            value={workerEmail}
-            onChange={(e) => setWorkerEmail(e.target.value)}
-            onBlur={() => loadIssuedFor(workerEmail)}
-            placeholder="worker@example.com"
-            required
-          />
-        </label>
-        <div className="row">
-          <label>
-            Type
-            <input
-              value={credentialType}
-              onChange={(e) => setCredentialType(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Expires (optional)
-            <input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
-          </label>
-        </div>
-        <label>
-          Title
-          <input value={title} onChange={(e) => setTitle(e.target.value)} required />
-        </label>
-        <button disabled={busy}>{busy ? "Issuing on-chain…" : "Issue credential"}</button>
-        {msg && <p className="msg">{msg}</p>}
-      </form>
+      <div className="dashboard-layout">
+        <aside>
+          <form onSubmit={issue} className="card form">
+            <h3 style={{ marginBottom: '1rem' }}>Mint Credential</h3>
+            <label>
+              Worker Email Target
+              <input
+                type="email"
+                value={workerEmail}
+                onChange={(e) => setWorkerEmail(e.target.value)}
+                onBlur={() => loadIssuedFor(workerEmail)}
+                placeholder="worker@example.com"
+                required
+              />
+            </label>
+            <label>
+              Credential Title
+              <input value={title} onChange={(e) => setTitle(e.target.value)} required />
+            </label>
+            <div className="row">
+              <label style={{ flex: 1 }}>
+                Type Code
+                <input
+                  value={credentialType}
+                  onChange={(e) => setCredentialType(e.target.value)}
+                  required
+                />
+              </label>
+              <label style={{ flex: 1 }}>
+                Expiration
+                <input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
+              </label>
+            </div>
+            
+            <button disabled={busy} style={{ marginTop: '0.5rem' }}>
+              {busy ? <span className="spinner"></span> : "Mint to Blockchain"}
+            </button>
+            {msg && <p className="msg">{msg}</p>}
+            {error && <p className="msg error">{error}</p>}
+          </form>
+        </aside>
 
-      {issued.length > 0 && (
-        <>
-          <h2>Credentials for {workerEmail}</h2>
-          <ul className="list">
-            {issued.map((c) => (
-              <li key={c.id} className="card row between">
-                <div>
-                  <strong>{c.title}</strong>
-                  <br />
-                  <small>
-                    {c.credentialType} · {c.issuerOrg} · {c.revokedAt ? "revoked" : "active"}
-                  </small>
-                </div>
-                {!c.revokedAt && (
-                  <button className="ghost" onClick={() => revoke(c.id)} disabled={busy}>
-                    Revoke
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+        <main>
+          <h2>History for {workerEmail || "Target Worker"}</h2>
+          {issued.length === 0 ? (
+            <div className="empty-state">
+              <span style={{ fontSize: '3rem' }}>🔍</span>
+              <h3>No History</h3>
+              <p>Enter a worker's email to view their credentials issued by your organization.</p>
+            </div>
+          ) : (
+            <ul className="list">
+              {issued.map((c) => (
+                <li key={c.id} className="card row between">
+                  <div className="list-item-content">
+                    <strong style={{ fontSize: '1.1rem' }}>{c.title}</strong>
+                    <small>
+                      {c.credentialType} • {c.revokedAt ? "Revoked" : "Active Status"}
+                    </small>
+                  </div>
+                  {!c.revokedAt ? (
+                    <button className="ghost" onClick={() => revoke(c.id)} disabled={busy}>
+                      {busy ? "Revoking..." : "Revoke"}
+                    </button>
+                  ) : (
+                    <span className="badge bad">REVOKED</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </main>
+      </div>
     </section>
   );
 }

@@ -62,12 +62,12 @@ export default function WorkerPage() {
 
   if (!me) {
     return (
-      <section>
-        <h1>Worker sign-in</h1>
+      <section className="auth-container">
+        <h1>Access Wallet</h1>
         <p className="lead">Your credentials travel with you across every employer.</p>
         <form onSubmit={signIn} className="card form">
           <label>
-            Name
+            Full Name
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -76,7 +76,7 @@ export default function WorkerPage() {
             />
           </label>
           <label>
-            Email
+            Email Address
             <input
               type="email"
               value={email}
@@ -85,41 +85,67 @@ export default function WorkerPage() {
               required
             />
           </label>
-          <button disabled={busy}>{busy ? "…" : "Sign in"}</button>
+          <button disabled={busy}>
+            {busy ? <span className="spinner"></span> : "Open Wallet"}
+          </button>
         </form>
       </section>
     );
   }
 
   return (
-    <section>
-      <h1>My credentials</h1>
-      <p className="who">
-        {me.name} · wallet {me.address?.slice(0, 6)}…{me.address?.slice(-4)}
-      </p>
-      {results.length === 0 ? (
-        <p className="lead">
-          No credentials yet. Ask your training provider to issue one to {me.email}.
-        </p>
-      ) : (
-        <ul className="list">
-          {results.map((c) => (
-            <li key={c.credentialId} className="card row between">
-              <div>
-                <strong>{c.title}</strong>
-                <br />
-                <small>
-                  {c.credentialType} · {c.issuerOrg}
-                  {c.expiresAt
-                    ? ` · expires ${new Date(c.expiresAt * 1000).toLocaleDateString()}`
-                    : ""}
-                </small>
+    <section className="dashboard-layout">
+      <aside>
+        <div className="card">
+          <h3>Worker Profile</h3>
+          <div className="form" style={{ marginTop: '1rem' }}>
+            <div>
+              <small>Name</small>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{me.name}</div>
+            </div>
+            <div>
+              <small>Email</small>
+              <div>{me.email}</div>
+            </div>
+            <div>
+              <small>On-Chain Address</small>
+              <div className="who" style={{ marginTop: '0.25rem' }}>
+                {me.address?.slice(0, 8)}…{me.address?.slice(-6)}
               </div>
-              <span className={`badge ${BADGE[c.status] ?? ""}`}>{c.status}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main>
+        <div className="row between" style={{ marginBottom: '1.5rem' }}>
+          <h2>My Active Credentials</h2>
+          <div className="who">Total: {results.length}</div>
+        </div>
+        
+        {results.length === 0 ? (
+          <div className="empty-state">
+            <span style={{ fontSize: '3rem' }}>🪪</span>
+            <h3>No credentials found</h3>
+            <p>Ask your training provider to issue one to <strong>{me.email}</strong>.</p>
+          </div>
+        ) : (
+          <ul className="list">
+            {results.map((c) => (
+              <li key={c.credentialId} className="card row between">
+                <div className="list-item-content">
+                  <strong style={{ fontSize: '1.1rem' }}>{c.title}</strong>
+                  <small>
+                    {c.credentialType} • Issued by {c.issuerOrg}
+                    {c.expiresAt ? ` • Expires ${new Date(c.expiresAt * 1000).toLocaleDateString()}` : ""}
+                  </small>
+                </div>
+                <span className={`badge ${BADGE[c.status] ?? ""}`}>{c.status}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
     </section>
   );
 }
