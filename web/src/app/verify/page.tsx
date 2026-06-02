@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import CameraScanner from "../../components/CameraScanner";
+import CryptoAudit from "../../components/CryptoAudit";
 
 type Result = {
   credentialId: string;
@@ -25,15 +27,15 @@ export default function VerifyPage() {
   const [worker, setWorker] = useState<Worker>(null);
   const [results, setResults] = useState<Result[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [auditCred, setAuditCred] = useState<Result | null>(null);
 
-  async function run(e: React.FormEvent) {
-    e.preventDefault();
+  async function fetchRecord(targetEmail: string) {
     setBusy(true);
     setResults(null);
     const r = await fetch("/api/verify", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ workerEmail: email }),
+      body: JSON.stringify({ workerEmail: targetEmail }),
     });
     const d = await r.json();
     setBusy(false);
@@ -41,15 +43,22 @@ export default function VerifyPage() {
     setResults(d.results ?? []);
   }
 
+  async function run(e: React.FormEvent) {
+    e.preventDefault();
+    await fetchRecord(email);
+  }
+
   return (
     <section>
+      {auditCred && <CryptoAudit credential={auditCred} onClose={() => setAuditCred(null)} />}
+
       <div className="search-header">
         <h1>Global Site Verification</h1>
         <p className="lead">
           Instantly query the blockchain to cryptographically confirm any incoming worker's safety credentials and licenses.
         </p>
 
-        <form onSubmit={run} className="card form" style={{ padding: '2rem', display: 'flex', flexDirection: 'row', alignItems: 'flex-end', gap: '1rem' }}>
+        <form onSubmit={run} className="card form" style={{ padding: '2rem', display: 'flex', flexDirection: 'row', alignItems: 'flex-end', gap: '1rem', marginBottom: '1.5rem' }}>
           <label style={{ flex: 1, textAlign: 'left' }}>
             Worker Identifier (Email)
             <input
@@ -64,6 +73,8 @@ export default function VerifyPage() {
             {busy ? <span className="spinner"></span> : "Scan Blockchain"}
           </button>
         </form>
+
+        <CameraScanner onSimulateScan={() => { setEmail("worker@example.com"); fetchRecord("worker@example.com"); }} />
       </div>
 
       {results && (
@@ -98,7 +109,7 @@ export default function VerifyPage() {
                 ) : (
                   <ul className="list">
                     {results.map((c) => (
-                      <li key={c.credentialId} className="card row between">
+                      <li key={c.credentialId} className="card row between" style={{ alignItems: 'center' }}>
                         <div className="list-item-content">
                           <strong style={{ fontSize: '1.1rem' }}>{c.title}</strong>
                           <small>
@@ -106,7 +117,12 @@ export default function VerifyPage() {
                             {c.expiresAt ? ` • Expires ${new Date(c.expiresAt * 1000).toLocaleDateString()}` : ""}
                           </small>
                         </div>
-                        <span className={`badge ${BADGE[c.status] ?? ""}`}>{c.status}</span>
+                        <div className="row">
+                          <button onClick={() => setAuditCred(c)} className="ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.8rem", border: "1px solid var(--border)", color: "var(--text)" }}>
+                            View Proof
+                          </button>
+                          <span className={`badge ${BADGE[c.status] ?? ""}`}>{c.status}</span>
+                        </div>
                       </li>
                     ))}
                   </ul>

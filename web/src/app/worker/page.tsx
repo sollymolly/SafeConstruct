@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import QRCodeWidget from "../../components/QRCodeWidget";
 
 type Me = { id: string; email: string; name: string; role: string; address: string | null } | null;
 type Result = {
@@ -114,6 +115,11 @@ export default function WorkerPage() {
               </div>
             </div>
           </div>
+        </div>
+        
+        <div className="card" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+          <h3 style={{ marginBottom: '1rem' }}>Present to Site Manager</h3>
+          <QRCodeWidget value={me.email} />
         </div>
       </aside>
 

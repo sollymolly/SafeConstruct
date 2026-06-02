@@ -17,6 +17,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               🦺 SafeConstruct
             </Link>
             <nav>
+              <Link href="/analytics">Analytics</Link>
+              <Link href="/network">Trust Graph</Link>
+              <span style={{ color: "var(--border)", margin: "0 1rem" }}>|</span>
               <Link href="/issuer">Issuer Portal</Link>
               <Link href="/worker">Worker Wallet</Link>
               <Link href="/verify">Verify Site</Link>
