@@ -23,7 +23,8 @@ export default function ProfilePage() {
           setName(d.user.name);
           setEmail(d.user.email);
         }
-      });
+      })
+      .catch(() => setError("Could not load your profile. Please try again."));
   }, []);
 
   async function handleUpdate(e: React.FormEvent) {
@@ -32,38 +33,45 @@ export default function ProfilePage() {
     setMsg("");
     setError("");
 
-    // Scientific Validation
-    if (name.length < 2 || name.length > 64) {
+    // Only the email (login identity) is editable here. Validate before sending.
+    const next = email.trim().toLowerCase();
+    if (next === me?.email) {
       setBusy(false);
-      return setError("Constraint Violation: Subject Name must be between 2 and 64 characters.");
+      return setError("Enter a different email address to migrate this account.");
     }
-    if (email.length < 5 || email.length > 80) {
+    if (next.length < 5 || next.length > 80) {
       setBusy(false);
       return setError("Constraint Violation: Cryptographic Key (Email) must be between 5 and 80 bytes.");
     }
 
-    // Call API to update the session (Using existing auth endpoint behavior to update)
+    // Move the login to the new email. The server confirms it immediately, so the
+    // old address is severed; all credentials + wallet stay with the account.
     const r = await fetch("/api/auth", {
-      method: "POST",
+      method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, name, role: me?.role }),
+      body: JSON.stringify({ email: next }),
     });
-    const d = await r.json();
-    
+    const d = await r.json().catch(() => ({ error: "Unexpected server response." }));
+
     setBusy(false);
     if (d.error) return setError(d.error);
-    
-    setMsg("Identity parameters successfully updated on the network.");
-    
-    // Update local state to reflect changes instantly
+
+    // Update local state to reflect changes instantly.
     setMe(d.user);
-    
-    // Optionally reload after 1.5 seconds to refresh the Navbar name
-    setTimeout(() => { window.location.reload(); }, 1500);
+    setMsg("Login identity migrated. The previous email can no longer access this account.");
+
+    // Reload after a moment so every view (and the navbar) reflects the new identity.
+    setTimeout(() => { window.location.reload(); }, 1800);
   }
 
   if (!me) {
-    return <div className="hero"><span className="spinner" style={{margin: '0 auto', display: 'block'}}></span></div>;
+    return (
+      <div className="hero">
+        {error
+          ? <p className="msg error" style={{ margin: "0 auto", maxWidth: "420px" }}>{error}</p>
+          : <span className="spinner" style={{ margin: "0 auto", display: "block" }}></span>}
+      </div>
+    );
   }
 
   return (
@@ -109,16 +117,9 @@ export default function ProfilePage() {
             <label>
               <div className="row between">
                 <span>Subject Identifier (Full Name)</span>
-                <small>2-64 chars</small>
+                <small>Read-only</small>
               </div>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Jane Doe"
-                minLength={2}
-                maxLength={64}
-                required
-              />
+              <input value={name} placeholder="Jane Doe" disabled />
             </label>
 
             <label style={{ marginTop: "1rem" }}>

@@ -37,7 +37,9 @@ export async function POST(req: Request) {
 
   const now = Math.floor(Date.now() / 1000);
 
-  const results: CredentialVerification[] = await Promise.all(
+  let results: CredentialVerification[];
+  try {
+    results = await Promise.all(
     worker.receivedCredentials.map(async (c) => {
       const issuedAt = Math.floor(c.issuedAt.getTime() / 1000);
       const expiresAt = c.expiresAt ? Math.floor(c.expiresAt.getTime() / 1000) : 0;
@@ -73,7 +75,17 @@ export async function POST(req: Request) {
         status,
       };
     })
-  );
+    );
+  } catch (err) {
+    console.error("POST /api/verify: on-chain read failed", err);
+    return NextResponse.json(
+      {
+        error:
+          "Could not reach the credential chain. Make sure the local node is running and the contract is deployed (npm run contracts:deploy:local).",
+      },
+      { status: 502 }
+    );
+  }
 
   return NextResponse.json({
     worker: { name: worker.name, email: worker.email, address: worker.wallet.address },

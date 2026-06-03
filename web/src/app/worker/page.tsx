@@ -26,15 +26,27 @@ export default function WorkerPage() {
   const [me, setMe] = useState<Me>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   async function verify(workerEmail: string) {
-    const r = await fetch("/api/verify", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ workerEmail }),
-    });
-    const d = await r.json();
-    setResults(d.results ?? []);
+    setError("");
+    try {
+      const r = await fetch("/api/verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ workerEmail }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setResults([]);
+        setError(d.error ?? "Could not verify credentials right now.");
+        return;
+      }
+      setResults(d.results ?? []);
+    } catch {
+      setResults([]);
+      setError("Could not reach the verification service.");
+    }
   }
 
   useEffect(() => {
@@ -101,6 +113,8 @@ export default function WorkerPage() {
           <h2>My Active Credentials</h2>
           <div className="who">Total: {results.length}</div>
         </div>
+
+        {error && <p className="msg error" style={{ marginBottom: '1.5rem' }}>{error}</p>}
 
         {results.length === 0 ? (
           <div className="empty-state">
