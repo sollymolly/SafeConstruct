@@ -60,12 +60,17 @@ export default function VerifyPage() {
 
         <form onSubmit={run} className="card form" style={{ padding: '2rem', display: 'flex', flexDirection: 'row', alignItems: 'flex-end', gap: '1rem', marginBottom: '1.5rem' }}>
           <label style={{ flex: 1, textAlign: 'left' }}>
-            Worker Identifier (Email)
+            <div className="row between" style={{ marginBottom: '0.4rem' }}>
+              <span>Worker Identifier (Email)</span>
+              <small>5 - 80 bytes</small>
+            </div>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="worker@example.com"
+              minLength={5}
+              maxLength={80}
               required
             />
           </label>

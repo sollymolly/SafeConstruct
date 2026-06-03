@@ -349,3 +349,101 @@ button.ghost:hover:not(:disabled) {
   .nav nav a { margin-left: 1rem; margin-right: 1rem; }
   .row.between { flex-direction: column; align-items: flex-start; gap: 1rem; }
 }
+
+/* User Profile Hover Dropdown (Bulletproof) */
+.profile-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: 1.5rem;
+}
+
+.profile-button {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.profile-container:hover .profile-button {
+  border-color: var(--brand);
+  background: rgba(27, 39, 64, 0.95);
+}
+
+.profile-dropdown-wrapper {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  padding-top: 0.8rem; 
+  z-index: 100;
+}
+
+.profile-container:hover .profile-dropdown-wrapper {
+  display: block;
+  animation: slideDown 0.2s ease forwards;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.profile-dropdown {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.5rem;
+  min-width: 200px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+}
+
+.dropdown-item {
+  width: 100%;
+  box-sizing: border-box; /* Forces padding to stay strictly inside */
+  background: transparent;
+  color: var(--text);
+  border: none;
+  text-align: left;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  transition: background 0.2s ease;
+  text-decoration: none;
+}
+
+.dropdown-item .icon-span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; /* Forces identical alignment for both icons */
+}
+
+.dropdown-item:hover {
+  background: var(--panel-2);
+  color: var(--brand);
+}
+
+.dropdown-item.danger {
+  color: var(--bad);
+  margin-top: 0.3rem;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 8px 8px;
+}
+
+.dropdown-item.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--bad);
+}
