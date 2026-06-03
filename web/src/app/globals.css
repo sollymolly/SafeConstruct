@@ -408,12 +408,12 @@ button.ghost:hover:not(:disabled) {
 
 .dropdown-item {
   width: 100%;
-  box-sizing: border-box; /* Forces padding to stay strictly inside */
+  box-sizing: border-box;
   background: transparent;
   color: var(--text);
   border: none;
   text-align: left;
-  padding: 0.7rem 1rem;
+  padding: 0.8rem 1rem;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.95rem;
@@ -422,13 +422,16 @@ button.ghost:hover:not(:disabled) {
   gap: 0.7rem;
   transition: background 0.2s ease;
   text-decoration: none;
+  font-family: inherit; 
+  margin: 0; 
+  line-height: 1.2; 
 }
 
 .dropdown-item .icon-span {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px; /* Forces identical alignment for both icons */
+  width: 20px;
 }
 
 .dropdown-item:hover {

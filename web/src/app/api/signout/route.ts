@@ -1,7 +1,8 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function POST() {
-  const response = NextResponse.json({ success: true });
-  response.cookies.delete("sc_uid");
-  return response;
+  const cookieStore = await cookies();
+  cookieStore.delete("sc_uid");
+  return NextResponse.json({ success: true });
 }
