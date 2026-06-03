@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const worker = await findOrCreateUser({ email: workerEmail, role: "WORKER" });
+  const worker = await findOrCreateUser({ email: workerEmail });
   if (!worker.wallet) return NextResponse.json({ error: "worker has no wallet" }, { status: 500 });
 
   // Build the off-chain record and its on-chain hash.

@@ -1,24 +1,31 @@
 // SafeConstruct off-chain store. Holds credential CONTENT + custodial wallets.
 // The blockchain holds the hash + status; this DB holds everything else.
 //
-// SQLite for zero-setup local dev. To move to Postgres in prod, change the
-// datasource provider to "postgresql" and point DATABASE_URL at your database.
+// Postgres, hosted on Supabase. The app connects via the pooled DATABASE_URL;
+// Prisma migrations use the direct DIRECT_URL. Identity (email + password) lives
+// in Supabase Auth (auth.users); the User.authId column links our row to it.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
   id        String   @id @default(uuid())
+  // Supabase auth.users id once the account is claimed. Null for "shadow"
+  // profiles created when an issuer issues to a worker who hasn't signed up yet;
+  // set on that worker's first sign-in (see provisionUser in src/lib/users.ts).
+  authId    String?  @unique
   email     String   @unique
   name      String
-  // WORKER | ISSUER | ADMIN. Stored as a string because SQLite has no enums;
-  // validated via the Role type in src/types/credential.ts.
+  // WORKER | ISSUER | ADMIN. Stored as a string and validated via the Role type
+  // in src/types/credential.ts. Sign-up always creates WORKER; only an ADMIN can
+  // promote to ISSUER/ADMIN.
   role      String   @default("WORKER")
   createdAt DateTime @default(now())
 

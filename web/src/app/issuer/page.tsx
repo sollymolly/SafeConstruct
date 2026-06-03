@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 type Me = { id: string; email: string; name: string; role: string; address: string | null } | null;
 type Cred = {
@@ -13,12 +14,10 @@ type Cred = {
 
 export default function IssuerPage() {
   const [me, setMe] = useState<Me>(null);
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
-
-  const [email, setEmail] = useState("");
-  const [org, setOrg] = useState("");
 
   const [workerEmail, setWorkerEmail] = useState("");
   const [credentialType, setCredentialType] = useState("OSHA-30");
@@ -29,24 +28,11 @@ export default function IssuerPage() {
   useEffect(() => {
     fetch("/api/auth")
       .then((r) => r.json())
-      .then((d) => setMe(d.user));
+      .then((d) => {
+        setMe(d.user);
+        setLoading(false);
+      });
   }, []);
-
-  async function signIn(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setMsg("");
-    setError("");
-    const r = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, name: org, role: "ISSUER" }),
-    });
-    const d = await r.json();
-    setBusy(false);
-    if (d.error) return setError(d.error);
-    setMe(d.user);
-  }
 
   async function loadIssuedFor(em: string) {
     if (!em) return;
@@ -79,36 +65,31 @@ export default function IssuerPage() {
     loadIssuedFor(workerEmail);
   }
 
-  if (!me || me.role !== "ISSUER") {
+  if (loading) return null;
+
+  if (!me) {
     return (
       <section className="auth-container">
         <h1>Issuer Portal</h1>
-        <p className="lead">Authorized training providers dashboard.</p>
-        <form onSubmit={signIn} className="card form">
-          <label>
-            Organization Name
-            <input
-              value={org}
-              onChange={(e) => setOrg(e.target.value)}
-              placeholder="ACME Safety Training"
-              required
-            />
-          </label>
-          <label>
-            Authorized Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="issuer@acme.com"
-              required
-            />
-          </label>
-          <button disabled={busy}>
-            {busy ? <span className="spinner"></span> : "Sign In to Dashboard"}
-          </button>
-          {error && <p className="msg error">{error}</p>}
-        </form>
+        <p className="lead">Log in with an authorized issuer account to mint credentials.</p>
+        <Link href="/login?redirect=/issuer" className="card" style={{ display: "block" }}>
+          Log in →
+        </Link>
+      </section>
+    );
+  }
+
+  if (me.role !== "ISSUER") {
+    return (
+      <section className="auth-container">
+        <h1>Issuer access required</h1>
+        <p className="lead">
+          Your account ({me.email}) isn&apos;t an authorized issuer yet. Ask an admin to grant
+          issuer access, then return here.
+        </p>
+        <Link href="/worker" className="card" style={{ display: "block" }}>
+          Go to your wallet →
+        </Link>
       </section>
     );
   }
@@ -159,7 +140,7 @@ export default function IssuerPage() {
                 <input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
               </label>
             </div>
-            
+
             <button disabled={busy} style={{ marginTop: '0.5rem' }}>
               {busy ? <span className="spinner"></span> : "Mint to Blockchain"}
             </button>

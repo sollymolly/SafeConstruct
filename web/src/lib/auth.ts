@@ -1,25 +1,33 @@
-import { cookies } from "next/headers";
-import { prisma } from "@/lib/db/client";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { provisionUser } from "@/lib/users";
 
-const COOKIE = "sc_uid";
+// Authentication is handled by Supabase Auth (email + password, email
+// verification, password reset, JWT sessions in httpOnly cookies). This module
+// bridges that session to our own User/Wallet/role model in Postgres.
 
-// NOTE: This is a DEV-ONLY session — a plaintext userId in a cookie, no password.
-// It exists so the three role flows (issuer/worker/verifier) are demoable.
-// Replace with real authentication (e.g. Auth.js) before any real deployment.
-
+/**
+ * The signed-in app user (with wallet), or null. Reads the Supabase session,
+ * then resolves/creates the matching Prisma User via provisionUser. Returns the
+ * same shape the API routes depend on: { id, email, name, role, wallet, ... }.
+ */
 export async function getCurrentUser() {
-  const store = await cookies();
-  const uid = store.get(COOKIE)?.value;
-  if (!uid) return null;
-  return prisma.user.findUnique({ where: { id: uid }, include: { wallet: true } });
-}
+  let session: { authId: string; email: string; name?: string } | null = null;
 
-export async function setCurrentUser(userId: string) {
-  const store = await cookies();
-  store.set(COOKIE, userId, { httpOnly: true, sameSite: "lax", path: "/" });
-}
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (!error && data.user?.email) {
+      session = {
+        authId: data.user.id,
+        email: data.user.email,
+        name: (data.user.user_metadata?.name as string | undefined) ?? undefined,
+      };
+    }
+  } catch {
+    // Supabase not configured or unreachable → treat as logged out.
+    return null;
+  }
 
-export async function clearCurrentUser() {
-  const store = await cookies();
-  store.delete(COOKIE);
+  if (!session) return null;
+  return provisionUser(session);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import QRCodeWidget from "../../components/QRCodeWidget";
 
 type Me = { id: string; email: string; name: string; role: string; address: string | null } | null;
@@ -23,10 +24,8 @@ const BADGE: Record<string, string> = {
 
 export default function WorkerPage() {
   const [me, setMe] = useState<Me>(null);
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
   const [results, setResults] = useState<Result[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   async function verify(workerEmail: string) {
     const r = await fetch("/api/verify", {
@@ -43,53 +42,27 @@ export default function WorkerPage() {
       .then((r) => r.json())
       .then((d) => {
         setMe(d.user);
+        setLoading(false);
         if (d.user?.email) verify(d.user.email);
       });
   }, []);
 
-  async function signIn(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    const r = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, name, role: "WORKER" }),
-    });
-    const d = await r.json();
-    setBusy(false);
-    setMe(d.user);
-    verify(email);
-  }
+  if (loading) return null;
 
   if (!me) {
     return (
       <section className="auth-container">
         <h1>Access Wallet</h1>
         <p className="lead">Your credentials travel with you across every employer.</p>
-        <form onSubmit={signIn} className="card form">
-          <label>
-            Full Name
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Jordan Smith"
-              required
-            />
-          </label>
-          <label>
-            Email Address
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="worker@example.com"
-              required
-            />
-          </label>
-          <button disabled={busy}>
-            {busy ? <span className="spinner"></span> : "Open Wallet"}
-          </button>
-        </form>
+        <Link href="/login?redirect=/worker" className="card" style={{ display: "block" }}>
+          Log in →
+        </Link>
+        <p className="lead" style={{ marginTop: "1.5rem", fontSize: "0.9rem" }}>
+          No account?{" "}
+          <Link href="/signup" style={{ color: "var(--brand)", fontWeight: 600 }}>
+            Sign up
+          </Link>
+        </p>
       </section>
     );
   }
@@ -116,7 +89,7 @@ export default function WorkerPage() {
             </div>
           </div>
         </div>
-        
+
         <div className="card" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
           <h3 style={{ marginBottom: '1rem' }}>Present to Site Manager</h3>
           <QRCodeWidget value={me.email} />
@@ -128,7 +101,7 @@ export default function WorkerPage() {
           <h2>My Active Credentials</h2>
           <div className="who">Total: {results.length}</div>
         </div>
-        
+
         {results.length === 0 ? (
           <div className="empty-state">
             <span style={{ fontSize: '3rem' }}>🪪</span>

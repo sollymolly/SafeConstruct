@@ -31,7 +31,9 @@ export const CREDENTIAL_REGISTRY_ABI = ${JSON.stringify(artifact.abi, null, 2)} 
   console.log(`✓ Wrote ABI + address to ${path.relative(process.cwd(), target)}`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exitCode = 1;
-});
+main()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
