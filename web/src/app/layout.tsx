@@ -2,6 +2,7 @@ import "./globals.css";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { getCurrentUser } from "@/lib/auth";
+import UserMenu from "@/components/UserMenu";
 
 export const metadata = {
   title: "SafeConstruct | Enterprise Safety Credentials",
@@ -30,24 +31,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               {user ? (
                 <>
                   {user.role === "ADMIN" && <Link href="/admin">Admin</Link>}
-                  <span className="who" style={{ marginLeft: "1rem" }}>{user.name}</span>
-                  <form action="/auth/signout" method="post" style={{ display: "inline" }}>
-                    <button
-                      type="submit"
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        color: "var(--muted)",
-                        marginLeft: "1rem",
-                        padding: 0,
-                        fontWeight: 500,
-                        fontSize: "0.95rem",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Sign out
-                    </button>
-                  </form>
+                  <UserMenu name={user.name} />
                 </>
               ) : (
                 <>

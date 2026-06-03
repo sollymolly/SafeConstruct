@@ -67,6 +67,11 @@ a {
   color: var(--brand);
 }
 
+.nav nav {
+  display: flex;
+  align-items: center;
+}
+
 .nav nav a {
   margin-left: 2rem;
   color: var(--muted);
