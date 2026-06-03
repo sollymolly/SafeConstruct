@@ -23,7 +23,6 @@ export default function LoginPage() {
       return setError(error.message);
     }
 
-    // Land on an explicit ?redirect if present, otherwise route by role.
     const redirect = new URLSearchParams(window.location.search).get("redirect");
     if (redirect) {
       router.replace(redirect);

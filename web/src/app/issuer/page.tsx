@@ -46,6 +46,8 @@ export default function IssuerPage() {
     setBusy(true);
     setMsg("");
     setError("");
+    if (title.length < 5 || title.length > 100) return setError("Protocol Violation: Title must be between 5 and 100 bytes.");
+    if (credentialType.length < 2 || credentialType.length > 30) return setError("Protocol Violation: Type code exceeds maximum 30 byte threshold.");
     const r = await fetch("/api/credentials", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -112,26 +114,30 @@ export default function IssuerPage() {
           <form onSubmit={issue} className="card form">
             <h3 style={{ marginBottom: '1rem' }}>Mint Credential</h3>
             <label>
-              Worker Email Target
+              <div className="row between"><span>Worker Email Target</span><small>Max 80 chars</small></div>
               <input
                 type="email"
                 value={workerEmail}
                 onChange={(e) => setWorkerEmail(e.target.value)}
                 onBlur={() => loadIssuedFor(workerEmail)}
                 placeholder="worker@example.com"
+                minLength={5}
+                maxLength={80}
                 required
               />
             </label>
             <label>
-              Credential Title
-              <input value={title} onChange={(e) => setTitle(e.target.value)} required />
+              <div className="row between"><span>Credential Title</span><small>5-100 chars</small></div>
+              <input value={title} onChange={(e) => setTitle(e.target.value)} minLength={5} maxLength={100} required />
             </label>
             <div className="row">
               <label style={{ flex: 1 }}>
-                Type Code
+                <div className="row between"><span>Type Code</span><small>Max 30</small></div>
                 <input
                   value={credentialType}
                   onChange={(e) => setCredentialType(e.target.value)}
+                  minLength={2}
+                  maxLength={30}
                   required
                 />
               </label>
@@ -140,7 +146,7 @@ export default function IssuerPage() {
                 <input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
               </label>
             </div>
-
+            
             <button disabled={busy} style={{ marginTop: '0.5rem' }}>
               {busy ? <span className="spinner"></span> : "Mint to Blockchain"}
             </button>
