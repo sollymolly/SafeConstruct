@@ -167,7 +167,25 @@ export default function NetworkGraphPage() {
                 const active = isActive(n.id);
                 const fill = n.type === "issuer" ? "var(--brand)" : "var(--ok)";
                 const stroke = `rgba(${EDGE_COLOR[nodeHealth(n)]}, 0.9)`;
-                const showLabel = isCenter || n.type === "issuer" || hovered === n.id || data.kind === "ego";
+
+                let labelX = p.x;
+                let labelY = isCenter ? p.y + r + 20 : p.y + r + 16;
+                let anchor: "start" | "middle" | "end" = "middle";
+                if (data.kind === "network") {
+                  const left = n.type === "issuer";
+                  labelX = left ? p.x - r - 8 : p.x + r + 8;
+                  labelY = p.y + 4;
+                  anchor = left ? "end" : "start";
+                } else if (!isCenter) {
+                  const dx = p.x - 500;
+                  const dy = p.y - 300;
+                  const len = Math.hypot(dx, dy) || 1;
+                  labelX = p.x + (dx / len) * (r + 10);
+                  labelY = p.y + (dy / len) * (r + 10) + 4;
+                  anchor = dx > 30 ? "start" : dx < -30 ? "end" : "middle";
+                }
+                const label = n.label.length > 22 ? `${n.label.slice(0, 21)}…` : n.label;
+
                 return (
                   <g
                     key={n.id}
@@ -181,18 +199,16 @@ export default function NetworkGraphPage() {
                         <animate attributeName="r" values={`${r};${r + 3};${r}`} dur="2.4s" repeatCount="indefinite" />
                       )}
                     </circle>
-                    {showLabel && (
-                      <text
-                        x={p.x}
-                        y={p.y + r + 15}
-                        textAnchor="middle"
-                        fontSize="13"
-                        fill="var(--text)"
-                        style={{ fontWeight: isCenter ? 700 : 500, pointerEvents: "none" }}
-                      >
-                        {n.label.length > 18 ? `${n.label.slice(0, 17)}…` : n.label}
-                      </text>
-                    )}
+                    <text
+                      x={labelX}
+                      y={labelY}
+                      textAnchor={anchor}
+                      fontSize="13"
+                      fill={active ? "var(--text)" : "var(--muted)"}
+                      style={{ fontWeight: isCenter ? 700 : 500, pointerEvents: "none" }}
+                    >
+                      {label}
+                    </text>
                   </g>
                 );
               })}
