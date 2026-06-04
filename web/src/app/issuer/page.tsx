@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { canIssue } from "@/lib/roles";
 
 type Me = { id: string; email: string; name: string; role: string; address: string | null } | null;
 type Cred = {
@@ -81,7 +82,7 @@ export default function IssuerPage() {
     );
   }
 
-  if (me.role !== "ISSUER") {
+  if (!canIssue(me.role)) {
     return (
       <section className="auth-container">
         <h1>Issuer access required</h1>

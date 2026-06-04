@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { Hex } from "viem";
 import { prisma } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
+import { canIssue } from "@/lib/roles";
 import { findOrCreateUser } from "@/lib/users";
 import { decryptPrivateKey } from "@/lib/wallet/custodial";
 import { hashCredential, toCredentialId } from "@/lib/hash";
@@ -43,7 +44,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const issuer = await getCurrentUser();
-  if (!issuer || issuer.role !== "ISSUER") {
+  if (!issuer || !canIssue(issuer.role)) {
     return NextResponse.json({ error: "must be signed in as an issuer" }, { status: 403 });
   }
   if (!issuer.wallet) {

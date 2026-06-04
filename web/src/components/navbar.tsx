@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { canIssue } from "@/lib/roles";
 import Image from "next/image";
 
 export default function Navbar() {
@@ -53,6 +54,8 @@ export default function Navbar() {
     );
   }
 
+  const canIssueOrVerify = canIssue(user.role);
+
   return (
     <header className="nav">
       <div className="nav-container">
@@ -69,9 +72,11 @@ export default function Navbar() {
           <Link href="/analytics">Analytics</Link>
           <Link href="/network">Trust Graph</Link>
           <span style={{ color: "var(--border)", margin: "0 1rem" }}>|</span>
-          <Link href="/issuer">Issuer Portal</Link>
+          {/* Issuing and site-verification are issuer/admin tools — workers don't
+              need them (the issuing API is role-gated server-side anyway). */}
+          {canIssueOrVerify && <Link href="/issuer">Issuer Portal</Link>}
           <Link href="/worker">Worker Wallet</Link>
-          <Link href="/verify">Verify Site</Link>
+          {canIssueOrVerify && <Link href="/verify">Verify Site</Link>}
 
           <div className="profile-container">
             <div className="profile-button">

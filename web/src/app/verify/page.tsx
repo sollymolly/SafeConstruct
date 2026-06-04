@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import CameraScanner from "../../components/CameraScanner";
 import CryptoAudit from "../../components/CryptoAudit";
+import { canIssue } from "@/lib/roles";
 
+type Me = { id: string; email: string; name: string; role: string; address: string | null } | null;
 type Result = {
   credentialId: string;
   title: string;
@@ -23,11 +26,23 @@ const BADGE: Record<string, string> = {
 };
 
 export default function VerifyPage() {
+  const [me, setMe] = useState<Me>(null);
+  const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [worker, setWorker] = useState<Worker>(null);
   const [results, setResults] = useState<Result[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [auditCred, setAuditCred] = useState<Result | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth")
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        setMe(r.ok ? d.user : null);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   async function fetchRecord(targetEmail: string) {
     setBusy(true);
@@ -46,6 +61,35 @@ export default function VerifyPage() {
   async function run(e: React.FormEvent) {
     e.preventDefault();
     await fetchRecord(email);
+  }
+
+  if (loading) return null;
+
+  if (!me) {
+    return (
+      <section className="auth-container">
+        <h1>Verification access</h1>
+        <p className="lead">Log in as an issuer to verify worker credentials on site.</p>
+        <Link href="/login?redirect=/verify" className="card" style={{ display: "block" }}>
+          Log in →
+        </Link>
+      </section>
+    );
+  }
+
+  if (!canIssue(me.role)) {
+    return (
+      <section className="auth-container">
+        <h1>Issuer access required</h1>
+        <p className="lead">
+          Site verification is available to issuers and admins. Your account
+          ({me.email}) doesn&apos;t have access yet.
+        </p>
+        <Link href="/worker" className="card" style={{ display: "block" }}>
+          Go to your wallet →
+        </Link>
+      </section>
+    );
   }
 
   return (
