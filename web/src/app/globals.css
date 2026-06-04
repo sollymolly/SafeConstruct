@@ -75,7 +75,7 @@ a {
   align-items: center;
 }
 
-.nav nav a {
+.nav nav > a {
   margin-left: 2rem;
   color: var(--muted);
   font-weight: 500;
@@ -407,6 +407,7 @@ button.ghost:hover:not(:disabled) {
   min-width: 200px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(10px);
+  overflow: hidden;
 }
 
 .dropdown-item {
@@ -420,7 +421,7 @@ button.ghost:hover:not(:disabled) {
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.95rem;
-  display: flex;
+  display: block;
   align-items: center;
   gap: 0.7rem;
   transition: background 0.2s ease;

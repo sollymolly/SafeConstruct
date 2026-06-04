@@ -75,7 +75,7 @@ export default function Navbar() {
 
           <div className="profile-container">
             <div className="profile-button">
-              <span>👤</span> {user.name}
+              {user.name}
             </div>
             <div className="profile-dropdown-wrapper">
               <div className="profile-dropdown">
@@ -84,10 +84,10 @@ export default function Navbar() {
                   className="dropdown-item"
                   style={{ display: "flex", alignItems: "center", width: "100%", boxSizing: "border-box" }}
                 >
-                  <span className="icon-span">⚙️</span> Edit Details
+                  Edit Details
                 </Link>
                 <button onClick={handleSignOut} className="dropdown-item danger">
-                  <span className="icon-span">🚪</span> Sign Out
+                  Sign Out
                 </button>
               </div>
             </div>
