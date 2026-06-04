@@ -11,11 +11,6 @@ import type { CredentialRecord } from "@/types/credential";
 
 export const runtime = "nodejs";
 
-/**
- * GET /api/credentials?workerEmail=...
- * Lists a worker's credentials (off-chain content). Defaults to the signed-in
- * user if no workerEmail is given (the worker's own view).
- */
 export async function GET(req: Request) {
   const workerEmail = new URL(req.url).searchParams.get("workerEmail")?.toLowerCase();
   const me = await getCurrentUser();
@@ -46,18 +41,14 @@ export async function GET(req: Request) {
   });
 }
 
-/**
- * POST /api/credentials (issuer only)
- * Body: { workerEmail, credentialType, title, description?, expiresAt? }
- * Hashes the record, writes it on-chain from the issuer's wallet, then stores
- * the off-chain content.
- */
 export async function POST(req: Request) {
   const issuer = await getCurrentUser();
   if (!issuer || issuer.role !== "ISSUER") {
     return NextResponse.json({ error: "must be signed in as an issuer" }, { status: 403 });
   }
-  if (!issuer.wallet) return NextResponse.json({ error: "issuer has no wallet" }, { status: 500 });
+  if (!issuer.wallet) {
+    return NextResponse.json({ error: "issuer has no wallet" }, { status: 500 });
+  }
 
   const { workerEmail, credentialType, title, description, expiresAt } = (await req
     .json()
@@ -77,9 +68,10 @@ export async function POST(req: Request) {
   }
 
   const worker = await findOrCreateUser({ email: workerEmail });
-  if (!worker.wallet) return NextResponse.json({ error: "worker has no wallet" }, { status: 500 });
+  if (!worker.wallet) {
+    return NextResponse.json({ error: "worker has no wallet" }, { status: 500 });
+  }
 
-  // Build the off-chain record and its on-chain hash.
   const id = randomUUID();
   const credentialId = toCredentialId(id);
   const issuedAtSec = Math.floor(Date.now() / 1000);
@@ -98,37 +90,46 @@ export async function POST(req: Request) {
   };
   const dataHash = hashCredential(record);
 
-  // Make the issuer wallet ready to transact, then commit on-chain.
-  const issuerKey = decryptPrivateKey(issuer.wallet);
-  await ensureGas(issuer.wallet.address as Hex);
-  await ensureIssuerRole(issuer.wallet.address as Hex);
+  // Wrap all blockchain operations — any RPC/gas/contract error returns
+  // a proper JSON error instead of crashing with an empty 500 response.
+  try {
+    const issuerKey = decryptPrivateKey(issuer.wallet);
+    await ensureGas(issuer.wallet.address as Hex);
+    await ensureIssuerRole(issuer.wallet.address as Hex);
 
-  const txHash = await issueCredential({
-    issuerPrivateKey: issuerKey,
-    credentialId,
-    worker: worker.wallet.address as Hex,
-    dataHash,
-    credentialType,
-    expiresAt: expiresAtSec,
-  });
-
-  const saved = await prisma.credential.create({
-    data: {
-      id,
-      workerId: worker.id,
-      issuerId: issuer.id,
-      credentialType,
-      title,
-      description: description ?? null,
-      issuedAt: new Date(issuedAtSec * 1000),
-      expiresAt: expiresAtSec ? new Date(expiresAtSec * 1000) : null,
+    const txHash = await issueCredential({
+      issuerPrivateKey: issuerKey,
+      credentialId,
+      worker: worker.wallet.address as Hex,
       dataHash,
-      txHash,
-    },
-  });
+      credentialType,
+      expiresAt: expiresAtSec,
+    });
 
-  return NextResponse.json(
-    { credential: { id: saved.id, txHash, dataHash } },
-    { status: 201 }
-  );
+    const saved = await prisma.credential.create({
+      data: {
+        id,
+        workerId: worker.id,
+        issuerId: issuer.id,
+        credentialType,
+        title,
+        description: description ?? null,
+        issuedAt: new Date(issuedAtSec * 1000),
+        expiresAt: expiresAtSec ? new Date(expiresAtSec * 1000) : null,
+        dataHash,
+        txHash,
+      },
+    });
+
+    return NextResponse.json(
+      { credential: { id: saved.id, txHash, dataHash } },
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error("Credential mint error:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Blockchain transaction failed" },
+      { status: 500 }
+    );
+  }
 }

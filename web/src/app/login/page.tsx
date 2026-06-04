@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -25,17 +23,20 @@ export default function LoginPage() {
 
     const redirect = new URLSearchParams(window.location.search).get("redirect");
     if (redirect) {
-      router.replace(redirect);
-    } else {
-      const me = await fetch("/api/auth")
-        .then((r) => r.json())
-        .then((d) => d.user)
-        .catch(() => null);
-      const dest =
-        me?.role === "ISSUER" ? "/issuer" : me?.role === "ADMIN" ? "/admin" : "/worker";
-      router.replace(dest);
+      window.location.replace(redirect);
+      return;
     }
-    router.refresh();
+
+    const me = await fetch("/api/auth")
+      .then(r => r.json())
+      .then(d => d.user)
+      .catch(() => null);
+
+    const dest =
+      me?.role === "ISSUER" ? "/issuer" :
+      me?.role === "ADMIN"  ? "/admin"  : "/worker";
+
+    window.location.replace(dest); 
   }
 
   return (
@@ -48,7 +49,7 @@ export default function LoginPage() {
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={e => setEmail(e.target.value)}
             placeholder="you@example.com"
             required
           />
@@ -58,7 +59,7 @@ export default function LoginPage() {
           <input
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={e => setPassword(e.target.value)}
             required
           />
         </label>

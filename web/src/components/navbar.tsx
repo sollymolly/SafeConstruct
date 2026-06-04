@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import Image from "next/image";
 
 export default function Navbar() {
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
@@ -38,7 +39,15 @@ export default function Navbar() {
     return (
       <header className="nav">
         <div className="nav-container">
-          <Link href="/" className="brand">🦺 SafeConstruct</Link>
+          <Link href="/" className="brand">
+            <Image
+              src="/logo.png"
+              alt="SafeConstruct Logo"
+              width={60}
+              height={60}
+            />
+            <span>SafeConstruct</span>
+          </Link>
         </div>
       </header>
     );
@@ -47,7 +56,15 @@ export default function Navbar() {
   return (
     <header className="nav">
       <div className="nav-container">
-        <Link href="/" className="brand">🦺 SafeConstruct</Link>
+        <Link href="/" className="brand">
+        <Image
+          src="/logo.png"
+          alt="SafeConstruct Logo"
+          width={60}
+          height={60}
+        />
+        <span>SafeConstruct</span>
+      </Link>
         <nav style={{ display: "flex", alignItems: "center" }}>
           <Link href="/analytics">Analytics</Link>
           <Link href="/network">Trust Graph</Link>

@@ -42,7 +42,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2rem;
+  padding: 0.5rem 0.5rem;
   border-bottom: 1px solid var(--border);
   background: rgba(11, 18, 32, 0.8);
   backdrop-filter: blur(12px);
@@ -61,8 +61,11 @@ a {
 }
 
 .nav .brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   font-weight: 800;
-  font-size: 1.25rem;
+  font-size: 1.6rem;
   letter-spacing: -0.02em;
   color: var(--brand);
 }

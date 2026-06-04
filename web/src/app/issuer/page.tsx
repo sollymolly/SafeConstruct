@@ -42,23 +42,23 @@ export default function IssuerPage() {
   }
 
   async function issue(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setMsg("");
-    setError("");
-    if (title.length < 5 || title.length > 100) return setError("Protocol Violation: Title must be between 5 and 100 bytes.");
-    if (credentialType.length < 2 || credentialType.length > 30) return setError("Protocol Violation: Type code exceeds maximum 30 byte threshold.");
-    const r = await fetch("/api/credentials", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ workerEmail, credentialType, title, expiresAt: expiresAt || null }),
-    });
-    const d = await r.json();
-    setBusy(false);
-    if (d.error) return setError(d.error);
-    setMsg(`Credential successfully minted (Tx: ${String(d.credential.txHash).slice(0, 12)}…)`);
-    loadIssuedFor(workerEmail);
-  }
+  e.preventDefault();
+  setMsg("");
+  setError("");
+  if (title.length < 5 || title.length > 100) return setError("Protocol Violation: Title must be between 5 and 100 bytes.");
+  if (credentialType.length < 2 || credentialType.length > 30) return setError("Protocol Violation: Type code exceeds maximum 30 byte threshold.");
+  setBusy(true);
+  const r = await fetch("/api/credentials", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ workerEmail, credentialType, title, expiresAt: expiresAt || null }),
+  });
+  const d = await r.json();
+  setBusy(false);
+  if (d.error) return setError(d.error);
+  setMsg(`Credential successfully minted (Tx: ${String(d.credential.txHash).slice(0, 12)}…)`);
+  loadIssuedFor(workerEmail);
+}
 
   async function revoke(id: string) {
     setBusy(true);
