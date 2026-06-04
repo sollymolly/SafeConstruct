@@ -49,6 +49,22 @@ export default function Navbar() {
             />
             <span>SafeConstruct</span>
           </Link>
+          <nav style={{ display: "flex", alignItems: "center" }}>
+            <Link
+              href="/about"
+              style={{
+                border: "1px solid var(--border)",
+                padding: "0.55rem 1.2rem",
+                borderRadius: "999px",
+                color: "var(--text)",
+                fontWeight: 600,
+                fontSize: "0.9rem",
+                background: "rgba(255,255,255,0.03)",
+              }}
+            >
+              About Us
+            </Link>
+          </nav>
         </div>
       </header>
     );

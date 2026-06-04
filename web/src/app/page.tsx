@@ -49,30 +49,6 @@ export default function Home() {
           minHeight: "100vh",
         }}
       >
-        <style jsx global>{`
-          @keyframes floatLogo {
-            0% {
-              transform: translateY(0px);
-            }
-            50% {
-              transform: translateY(-12px);
-            }
-            100% {
-              transform: translateY(0px);
-            }
-          }
-
-          @keyframes shineSweep {
-            0% {
-              left: -120%;
-            }
-
-            100% {
-              left: 150%;
-            }
-          }
-        `}</style>
-
         <div
           style={{
             position: "fixed",
@@ -137,41 +113,16 @@ export default function Home() {
               zIndex: 2,
             }}
           >
-            <div
-              style={{
-                position: "relative",
-                display: "inline-block",
-                animation: "floatLogo 6s ease-in-out infinite",
-                overflow: "hidden",
-              }}
-            >
-              <Image
-                src="/logo.png"
-                alt="SafeConstruct Logo"
-                width={340}
-                height={340}
-                priority
-                style={{
-                  filter:
-                    "drop-shadow(0 0 20px rgba(255,184,0,.35)) drop-shadow(0 0 60px rgba(255,184,0,.15))",
-                }}
-              />
-
-              <div
-                style={{
-                  position: "absolute",
-                  top: "-20%",
-                  left: "-120%",
-                  width: "80px",
-                  height: "140%",
-                  transform: "skewX(-25deg)",
-                  background:
-                    "linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent)",
-                  pointerEvents: "none",
-                  mixBlendMode: "screen",
-                  animation: "shineSweep 5s linear infinite",
-                }}
-              />
+            <div className="logo-stage">
+              <div className="logo-halo" />
+              <div className="logo-float">
+                <div className="logo-spin">
+                  <div className="logo-face">
+                    <Image src="/logo.png" alt="SafeConstruct Logo" width={340} height={340} priority className="logo-img" />
+                    <span className="logo-sheen" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <h1 style={{ fontSize: '4rem', marginBottom: '1.5rem', lineHeight: '1.1' }}>
@@ -182,14 +133,12 @@ export default function Home() {
             credential fraud, automate compliance, and ensure your workforce is mathematically
             verified for the site.
           </p>
-          <div style={{ marginTop: '3rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          <div className="cta-row">
             <Link href="/login">
-              <button style={{ padding: '1.2rem 2.5rem', fontSize: '1.1rem', width: '200px' }}>Log In</button>
+              <button className="btn-primary">Log In</button>
             </Link>
             <Link href="/signup">
-              <button style={{ padding: '1.2rem 2.5rem', fontSize: '1.1rem', width: '200px', background: '#1F4753', color: 'var(--text-dark)', border: 'none' }}>
-                Sign Up
-              </button>
+              <button className="btn-secondary">Sign Up</button>
             </Link>
           </div>
         </div>
@@ -199,24 +148,24 @@ export default function Home() {
             Advanced Protocol Capabilities
           </h2>
           <div className="dashboard-layout" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: '2rem' }}>
-            <div className="card" style={{ padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 0 40px rgba(255,184,0,.05)", border: "1px solid rgba(255,184,0,.12)", transition: "all .3s ease" }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⛓️</div>
+            <div className="card feature-card">
+              <div className="feature-icon">⛓️</div>
               <h3 style={{ fontSize: '1.25rem' }}>Immutable Audit Trails</h3>
               <p style={{ marginTop: '0.5rem', color: 'var(--muted)', fontSize: '0.95rem' }}>
                 Every issuance, expiration, and revocation is permanently recorded on-chain, creating
                 a cryptographic ledger that prevents retroactive forgery.
               </p>
             </div>
-            <div className="card" style={{ padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 0 40px rgba(255,184,0,.05)", border: "1px solid rgba(255,184,0,.12)", transition: "all .3s ease" }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🛡️</div>
+            <div className="card feature-card">
+              <div className="feature-icon">🛡️</div>
               <h3 style={{ fontSize: '1.25rem' }}>Zero-Knowledge Verification</h3>
               <p style={{ marginTop: '0.5rem', color: 'var(--muted)', fontSize: '0.95rem' }}>
                 Site Managers can validate a worker's safety clearance in real-time, relying entirely
                 on mathematically proven hashes rather than physical paperwork.
               </p>
             </div>
-            <div className="card" style={{ padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 0 40px rgba(255,184,0,.05)", border: "1px solid rgba(255,184,0,.12)", transition: "all .3s ease" }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🌐</div>
+            <div className="card feature-card">
+              <div className="feature-icon">🌐</div>
               <h3 style={{ fontSize: '1.25rem' }}>Decentralized Mobility</h3>
               <p style={{ marginTop: '0.5rem', color: 'var(--muted)', fontSize: '0.95rem' }}>
                 Workers carry a unified, instantly verifiable portfolio of their safety certifications
