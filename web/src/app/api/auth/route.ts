@@ -29,8 +29,19 @@ function publicUser(u: {
  * /signup, /login pages and the /auth/* routes), so this endpoint is read-only.
  */
 export async function GET() {
-  const user = await getCurrentUser();
-  return NextResponse.json({ user: user ? publicUser(user) : null });
+  try {
+    const user = await getCurrentUser();
+    return NextResponse.json({ user: user ? publicUser(user) : null });
+  } catch (e) {
+    // Provisioning the app-side User/Wallet can throw (e.g. a missing
+    // WALLET_ENCRYPTION_KEY, an unreachable DB, or a unique-constraint clash).
+    // Return the reason as JSON instead of letting it escape as an empty-body
+    // 500 — otherwise the client's r.json() dies with "Unexpected end of JSON
+    // input" and hides the real cause.
+    console.error("GET /api/auth failed:", e);
+    const message = e instanceof Error ? e.message : "Could not load your account.";
+    return NextResponse.json({ user: null, error: message }, { status: 500 });
+  }
 }
 
 /**

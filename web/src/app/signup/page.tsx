@@ -5,9 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
+const NAME_MIN = 2;
+const NAME_MAX = 64;
+
 export default function SignUpPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -16,14 +20,26 @@ export default function SignUpPage() {
 
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setError("");
+
+    // Validate each name part (2–64 chars) before touching the network.
+    const first = firstName.trim();
+    const last = lastName.trim();
+    if (first.length < NAME_MIN || first.length > NAME_MAX) {
+      return setError(`First name must be between ${NAME_MIN} and ${NAME_MAX} characters.`);
+    }
+    if (last.length < NAME_MIN || last.length > NAME_MAX) {
+      return setError(`Last name must be between ${NAME_MIN} and ${NAME_MAX} characters.`);
+    }
+    const name = `${first} ${last}`;
+
+    setBusy(true);
     const supabase = createSupabaseBrowserClient();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { name },
+        data: { name, firstName: first, lastName: last },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -61,11 +77,24 @@ export default function SignUpPage() {
       </p>
       <form onSubmit={signUp} className="card form">
         <label>
-          Full Name
+          First Name
           <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Jordan Smith"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="Jordan"
+            minLength={NAME_MIN}
+            maxLength={NAME_MAX}
+            required
+          />
+        </label>
+        <label>
+          Last Name
+          <input
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Smith"
+            minLength={NAME_MIN}
+            maxLength={NAME_MAX}
             required
           />
         </label>

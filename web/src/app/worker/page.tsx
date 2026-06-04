@@ -51,11 +51,19 @@ export default function WorkerPage() {
 
   useEffect(() => {
     fetch("/api/auth")
-      .then((r) => r.json())
-      .then((d) => {
-        setMe(d.user);
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
         setLoading(false);
+        if (!r.ok) {
+          setError(d.error ?? "Could not load your account. Please try again.");
+          return;
+        }
+        setMe(d.user);
         if (d.user?.email) verify(d.user.email);
+      })
+      .catch(() => {
+        setLoading(false);
+        setError("Could not reach the server. Please try again.");
       });
   }, []);
 
@@ -66,6 +74,7 @@ export default function WorkerPage() {
       <section className="auth-container">
         <h1>Access Wallet</h1>
         <p className="lead">Your credentials travel with you across every employer.</p>
+        {error && <p className="msg error" style={{ marginBottom: "1.5rem" }}>{error}</p>}
         <Link href="/login?redirect=/worker" className="card" style={{ display: "block" }}>
           Log in →
         </Link>
