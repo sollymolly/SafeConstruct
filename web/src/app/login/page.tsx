@@ -45,22 +45,10 @@ export default function LoginPage() {
       return setError(error.message);
     }
 
+    // Honor an explicit redirect (e.g. a protected page sent the user here),
+    // otherwise land everyone on the home dashboard regardless of role.
     const redirect = new URLSearchParams(window.location.search).get("redirect");
-    if (redirect) {
-      window.location.replace(redirect);
-      return;
-    }
-
-    const me = await fetch("/api/auth")
-      .then(r => r.json())
-      .then(d => d.user)
-      .catch(() => null);
-
-    const dest =
-      me?.role === "ISSUER" ? "/issuer" :
-      me?.role === "ADMIN"  ? "/admin"  : "/worker";
-
-    window.location.replace(dest);
+    window.location.replace(redirect || "/");
   }
 
   async function sendReset(e: React.FormEvent) {

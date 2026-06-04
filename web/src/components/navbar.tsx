@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { canIssue } from "@/lib/roles";
+import { canIssue, isAdmin } from "@/lib/roles";
 import Image from "next/image";
 
 export default function Navbar() {
@@ -55,6 +55,7 @@ export default function Navbar() {
   }
 
   const canIssueOrVerify = canIssue(user.role);
+  const admin = isAdmin(user.role);
 
   return (
     <header className="nav">
@@ -77,6 +78,7 @@ export default function Navbar() {
           {canIssueOrVerify && <Link href="/issuer">Issuer Portal</Link>}
           <Link href="/worker">Worker Wallet</Link>
           {canIssueOrVerify && <Link href="/verify">Verify Site</Link>}
+          {admin && <Link href="/admin">Admin</Link>}
 
           <div className="profile-container">
             <div className="profile-button">

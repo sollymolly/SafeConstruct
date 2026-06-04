@@ -90,8 +90,8 @@ export default function IssuerPage() {
           Your account ({me.email}) isn&apos;t an authorized issuer yet. Ask an admin to grant
           issuer access, then return here.
         </p>
-        <Link href="/worker" className="card" style={{ display: "block" }}>
-          Go to your wallet →
+        <Link href="/" className="card" style={{ display: "block" }}>
+          Back home →
         </Link>
       </section>
     );

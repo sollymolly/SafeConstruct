@@ -8,3 +8,11 @@
 export function canIssue(role: string | null | undefined): boolean {
   return role === "ISSUER" || role === "ADMIN";
 }
+
+/**
+ * Only admins can manage user roles (the /admin page). Kept here alongside
+ * canIssue so the navbar, the page guard, and the API route all agree.
+ */
+export function isAdmin(role: string | null | undefined): boolean {
+  return role === "ADMIN";
+}

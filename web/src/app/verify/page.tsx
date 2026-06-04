@@ -85,8 +85,8 @@ export default function VerifyPage() {
           Site verification is available to issuers and admins. Your account
           ({me.email}) doesn&apos;t have access yet.
         </p>
-        <Link href="/worker" className="card" style={{ display: "block" }}>
-          Go to your wallet →
+        <Link href="/" className="card" style={{ display: "block" }}>
+          Back home →
         </Link>
       </section>
     );

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { canIssue, isAdmin } from "@/lib/roles";
 
 type Me = { id: string; email: string; name: string; role: string; address: string | null } | null;
 
@@ -183,10 +184,10 @@ export default function Home() {
           </p>
           <div style={{ marginTop: '3rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <Link href="/login">
-              <button style={{ padding: '1.2rem 2.5rem', fontSize: '1.1rem' }}>Log In</button>
+              <button style={{ padding: '1.2rem 2.5rem', fontSize: '1.1rem', width: '200px' }}>Log In</button>
             </Link>
             <Link href="/signup">
-              <button className="ghost" style={{ padding: '1.2rem 2.5rem', fontSize: '1.1rem' }}>
+              <button style={{ padding: '1.2rem 2.5rem', fontSize: '1.1rem', width: '200px', background: '#1F4753', color: 'var(--text-dark)', border: 'none' }}>
                 Sign Up
               </button>
             </Link>
@@ -268,21 +269,32 @@ export default function Home() {
         </p>
       </div>
       <div className="cards">
-        <Link href="/issuer" className="card">
-          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🏫</div>
-          <h3>Issuer Portal</h3>
-          <p>Secure dashboard for training providers to issue, manage, and instantly revoke credentials on-chain.</p>
-        </Link>
+        {canIssue(me.role) && (
+          <Link href="/issuer" className="card">
+            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🏫</div>
+            <h3>Issuer Portal</h3>
+            <p>Secure dashboard for training providers to issue, manage, and instantly revoke credentials on-chain.</p>
+          </Link>
+        )}
         <Link href="/worker" className="card">
           <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>👷</div>
           <h3>Worker Wallet</h3>
           <p>Your portable professional identity. Carry your verified safety history to any job site securely.</p>
         </Link>
-        <Link href="/verify" className="card">
-          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>✅</div>
-          <h3>Live Verification</h3>
-          <p>Site managers can query the blockchain to cryptographically confirm worker compliance instantly.</p>
-        </Link>
+        {canIssue(me.role) && (
+          <Link href="/verify" className="card">
+            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>✅</div>
+            <h3>Live Verification</h3>
+            <p>Site managers can query the blockchain to cryptographically confirm worker compliance instantly.</p>
+          </Link>
+        )}
+        {isAdmin(me.role) && (
+          <Link href="/admin" className="card">
+            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🛠️</div>
+            <h3>User Administration</h3>
+            <p>Manage accounts and grant or revoke issuer access across the network.</p>
+          </Link>
+        )}
       </div>
     </section>
   );
