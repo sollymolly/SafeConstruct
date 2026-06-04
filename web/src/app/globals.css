@@ -341,6 +341,114 @@ button.ghost:hover:not(:disabled) {
   text-align: center;
 }
 
+.metric-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.metric-num {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0.5rem 0 1rem;
+  line-height: 1;
+}
+
+.metric-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.ring {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.ring-inner {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring-inner strong {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.bar-track {
+  background: var(--panel-2);
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.graph-card {
+  position: relative;
+  height: 600px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #0b1426 0%, #060913 70%);
+  box-shadow: var(--shadow);
+  display: grid;
+  place-items: center;
+}
+
+.graph-card svg text {
+  paint-order: stroke;
+  stroke: #060913;
+  stroke-width: 3px;
+}
+
+.graph-legend {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  background: var(--panel);
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.dash {
+  width: 18px;
+  height: 4px;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .metric-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: 900px) {
   .dashboard-layout {
     grid-template-columns: 1fr;
