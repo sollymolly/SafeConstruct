@@ -75,7 +75,13 @@ export default function Navbar() {
 
           <div className="profile-container">
             <div className="profile-button">
-              {user.name}
+              <Image
+                src="/363633-200.png"
+                alt="Profile"
+                width={40}
+                height={40}
+                className="profile-icon"
+              />
             </div>
             <div className="profile-dropdown-wrapper">
               <div className="profile-dropdown">

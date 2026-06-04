@@ -362,6 +362,21 @@ button.ghost:hover:not(:disabled) {
 }
 
 .profile-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 12px rgba(255, 255, 255, 0.35),
+    0 0 20px rgba(255, 255, 255, 0.15);
+}
+
+.profile-button {
   background: var(--panel-2);
   border: 1px solid var(--border);
   padding: 0.6rem 1rem;
@@ -453,4 +468,95 @@ button.ghost:hover:not(:disabled) {
 .dropdown-item.danger:hover {
   background: rgba(239, 68, 68, 0.1);
   color: var(--bad);
+}
+
+@keyframes floatLogo {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes logoGlow {
+  0% {
+    filter:
+      drop-shadow(0 0 20px rgba(255,184,0,0.3))
+      drop-shadow(0 0 40px rgba(255,184,0,0.15));
+  }
+
+  50% {
+    filter:
+      drop-shadow(0 0 45px rgba(255,184,0,0.7))
+      drop-shadow(0 0 90px rgba(255,184,0,0.35));
+  }
+
+  100% {
+    filter:
+      drop-shadow(0 0 20px rgba(255,184,0,0.3))
+      drop-shadow(0 0 40px rgba(255,184,0,0.15));
+  }
+}
+
+@keyframes shineSweep {
+  0% {
+    left: -120%;
+  }
+
+  100% {
+    left: 150%;
+  }
+}
+
+.card {
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+
+  box-shadow:
+    0 20px 60px rgba(255,184,0,0.12);
+
+  border-color: rgba(255,184,0,0.4);
+}
+
+.logo-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.animated-logo {
+  animation:
+    floatLogo 6s ease-in-out infinite,
+    logoGlow 4s ease-in-out infinite;
+}
+
+.logo-wrapper::after {
+  content: "";
+  position: absolute;
+  top: -10%;
+  left: -100%;
+  width: 50%;
+  height: 120%;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.35),
+    transparent
+  );
+
+  transform: skewX(-25deg);
+
+  animation: shineSweep 5s infinite;
 }
