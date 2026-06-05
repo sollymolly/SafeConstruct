@@ -145,7 +145,6 @@ export default function Home() {
 
         <div style={{ marginTop: '2rem', marginBottom: '6rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <span className="section-eyebrow">// 03 Capabilities</span>
             <h2 style={{ fontSize: '2rem', margin: 0 }}>
               Advanced Protocol Capabilities
             </h2>

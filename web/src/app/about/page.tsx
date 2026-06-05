@@ -207,7 +207,7 @@ export default function AboutPage() {
               <p>
                   Sol focuses on the experience and systems behind SafeConstruct.
                   Sol is a sophomore at Princeton studying Computer Science, Quantitative Economics, and Philosophy.
-                  Sol has prior experience as Software Intern at Nirvanca Carbon Solutions, working on optimization algorithms for agricultural carbon research.
+                  Sol has prior experience as Software Intern at Nirvana Carbon Solutions, working on optimization algorithms for agricultural carbon research.
               </p>
             </div>
           </div>
