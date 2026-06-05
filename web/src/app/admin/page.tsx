@@ -17,6 +17,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
 
   async function load() {
     const me = await fetch("/api/auth")
@@ -51,6 +52,14 @@ export default function AdminPage() {
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role: next } : u)));
   }
 
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? users.filter(
+        (u) =>
+          u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+      )
+    : users;
+
   if (loading) return null;
 
   if (role !== "ADMIN") {
@@ -77,14 +86,34 @@ export default function AdminPage() {
 
       {error && <p className="msg error">{error}</p>}
 
+      {users.length > 0 && (
+        <div className="admin-search">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name or email…"
+            aria-label="Search employees by name or email"
+          />
+          <span className="admin-search-count">
+            {filtered.length} of {users.length}
+          </span>
+        </div>
+      )}
+
       {users.length === 0 ? (
         <div className="empty-state">
           <h3>No users yet</h3>
           <p>Accounts appear here as people sign up.</p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state">
+          <h3>No matches</h3>
+          <p>No employees match &ldquo;{query}&rdquo;.</p>
+        </div>
       ) : (
         <ul className="list">
-          {users.map((u) => (
+          {filtered.map((u) => (
             <li key={u.id} className="card row between">
               <div className="list-item-content">
                 <strong style={{ fontSize: "1.1rem" }}>{u.name}</strong>

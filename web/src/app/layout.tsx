@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { ReactNode } from "react";
 import Navbar from "../components/navbar";
+import { AuthProvider } from "@/lib/auth-context";
 
 export const metadata = {
   title: "SafeConstruct | Enterprise Safety Credentials",
@@ -11,8 +12,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <Navbar />
-        <main className="container">{children}</main>
+        <AuthProvider>
+          <Navbar />
+          <main className="container">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );

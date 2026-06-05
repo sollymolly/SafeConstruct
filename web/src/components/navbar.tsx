@@ -1,42 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { canIssue, isAdmin } from "@/lib/roles";
+import { useAuth } from "@/lib/auth-context";
 import Image from "next/image";
 
 export default function Navbar() {
-  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
-
-    fetch(`/api/auth?t=${Date.now()}`)
-      .then(r => r.json())
-      .then(d => { setUser(d.user ?? null); setLoading(false); })
-      .catch(() => setLoading(false)); 
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetch(`/api/auth?t=${Date.now()}`)
-        .then(r => r.json())
-        .then(d => { setUser(d.user ?? null); setLoading(false); })
-        .catch(() => setLoading(false));
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { user, loading, transitioning, setTransitioning } = useAuth();
 
   async function handleSignOut() {
+    // Hide the nav for the whole sign-out → redirect window so we never flash the
+    // logged-out "About Us" bar on the current page before the reload.
+    setTransitioning(true);
     const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();          
-    await fetch("/auth/signout", { method: "POST" }); 
-    await fetch("/api/signout", { method: "POST" });  
+    await supabase.auth.signOut();
+    await fetch("/auth/signout", { method: "POST" });
+    await fetch("/api/signout", { method: "POST" });
     window.location.replace("/");
   }
 
-  if (loading || !user) {
+  // While auth is resolving or a redirect is mid-flight, render a bare bar (brand
+  // only) so the right side appears in sync with the destination page.
+  if (loading || transitioning) {
+    return (
+      <header className="nav">
+        <div className="nav-container">
+          <Link href="/" className="brand">
+            <Image src="/logo.png" alt="SafeConstruct Logo" width={60} height={60} />
+            <span>SafeConstruct</span>
+          </Link>
+        </div>
+      </header>
+    );
+  }
+
+  if (!user) {
     return (
       <header className="nav">
         <div className="nav-container">

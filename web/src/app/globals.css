@@ -314,6 +314,28 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(255, 176, 32, 0.2);
 }
 
+.checkbox-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: -0.5rem;
+  font-size: 0.88rem;
+  font-weight: 400;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
 button {
   background: var(--brand);
   color: var(--text-dark);
@@ -351,6 +373,24 @@ button.ghost {
 
 button.ghost:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.1);
+}
+
+.admin-search {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-search input {
+  flex: 1;
+}
+
+.admin-search-count {
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .list {
