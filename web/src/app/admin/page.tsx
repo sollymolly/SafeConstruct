@@ -9,7 +9,10 @@ type UserRow = {
   name: string;
   role: string;
   address: string | null;
+  createdAt: string;
 };
+
+type SortKey = "name" | "joined";
 
 export default function AdminPage() {
   const [role, setRole] = useState<string | null>(null);
@@ -18,6 +21,7 @@ export default function AdminPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("name");
 
   async function load() {
     const me = await fetch("/api/auth")
@@ -53,12 +57,21 @@ export default function AdminPage() {
   }
 
   const q = query.trim().toLowerCase();
-  const filtered = q
-    ? users.filter(
-        (u) =>
-          u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
-      )
-    : users;
+  const filtered = (
+    q
+      ? users.filter(
+          (u) =>
+            u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+        )
+      : users
+  )
+    .slice()
+    .sort((a, b) =>
+      sort === "name"
+        ? a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+        : // Newest first by join date.
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
 
   if (loading) return null;
 
@@ -95,6 +108,15 @@ export default function AdminPage() {
             placeholder="Search by name or email…"
             aria-label="Search employees by name or email"
           />
+          <select
+            className="admin-sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            aria-label="Sort employees"
+          >
+            <option value="name">Sort: A–Z</option>
+            <option value="joined">Sort: Recently joined</option>
+          </select>
           <span className="admin-search-count">
             {filtered.length} of {users.length}
           </span>
