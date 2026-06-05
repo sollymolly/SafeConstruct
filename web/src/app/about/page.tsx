@@ -189,7 +189,9 @@ export default function AboutPage() {
               <div className="bio-role">Co-Founder</div>
               <p>
                 Jaden focuses on the protocol and product behind SafeConstruct. 
-                Jaden is a sophomore at Princeton studying Computer Science and Quantitative Economics.
+                Jaden is a sophomore at Princeton studying Computer Science (ML Specialization), Statistics, and Quantitative Economics.
+                Jaden previously worked as a Machine Learning Engineering Intern at Andromeda Labs, where he developed Web3-enabled event
+                management platforms integrating wallet authentication, transaction processing, and scalable full-stack architecture.
               </p>
             </div>
             <div className="bio">
@@ -204,7 +206,8 @@ export default function AboutPage() {
               <div className="bio-role">Co-Founder</div>
               <p>
                   Sol focuses on the experience and systems behind SafeConstruct.
-                  Sol is a sophomore at Princeton studying Computer Science and Philosophy.
+                  Sol is a sophomore at Princeton studying Computer Science, Quantitative Economics, and Philosophy.
+                  Sol has prior experience as Software Intern at Nirvanca Carbon Solutions, working on optimization algorithms for agricultural carbon research.
               </p>
             </div>
           </div>
