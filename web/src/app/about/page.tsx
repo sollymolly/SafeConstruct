@@ -204,7 +204,7 @@ export default function AboutPage() {
               <div className="bio-role">Co-Founder</div>
               <p>
                   Sol focuses on the experience and systems behind SafeConstruct.
-                  Sol is a sophomore at Princeton studying Psychology and Gender Studies along with a minor in Slavic Studies.
+                  Sol is a sophomore at Princeton studying Computer Science and Philosophy.
               </p>
             </div>
           </div>
