@@ -144,34 +144,50 @@ export default function Home() {
         </div>
 
         <div style={{ marginTop: '2rem', marginBottom: '6rem' }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '3rem', fontSize: '2rem' }}>
-            Advanced Protocol Capabilities
-          </h2>
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <span className="section-eyebrow">// 03 Capabilities</span>
+            <h2 style={{ fontSize: '2rem', margin: 0 }}>
+              Advanced Protocol Capabilities
+            </h2>
+          </div>
           <div className="dashboard-layout" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: '2rem' }}>
             <div className="card feature-card">
-              <div className="feature-icon">⛓️</div>
-              <h3 style={{ fontSize: '1.25rem' }}>Immutable Audit Trails</h3>
-              <p style={{ marginTop: '0.5rem', color: 'var(--muted)', fontSize: '0.95rem' }}>
+              <span className="feature-eyebrow">Protocol 01</span>
+              <h3>Immutable Audit Trails</h3>
+              <span className="feature-divider" />
+              <p>
                 Every issuance, expiration, and revocation is permanently recorded on-chain, creating
                 a cryptographic ledger that prevents retroactive forgery.
               </p>
+              <span className="feature-spec">keccak256 · on-chain event log</span>
             </div>
             <div className="card feature-card">
-              <div className="feature-icon">🛡️</div>
-              <h3 style={{ fontSize: '1.25rem' }}>Zero-Knowledge Verification</h3>
-              <p style={{ marginTop: '0.5rem', color: 'var(--muted)', fontSize: '0.95rem' }}>
+              <span className="feature-eyebrow">Protocol 02</span>
+              <h3>Hash-Proof Verification</h3>
+              <span className="feature-divider" />
+              <p>
                 Site Managers can validate a worker's safety clearance in real-time, relying entirely
                 on mathematically proven hashes rather than physical paperwork.
               </p>
+              <span className="feature-spec">hash-matched · zero PII on-chain</span>
             </div>
             <div className="card feature-card">
-              <div className="feature-icon">🌐</div>
-              <h3 style={{ fontSize: '1.25rem' }}>Decentralized Mobility</h3>
-              <p style={{ marginTop: '0.5rem', color: 'var(--muted)', fontSize: '0.95rem' }}>
+              <span className="feature-eyebrow">Protocol 03</span>
+              <h3>Decentralized Mobility</h3>
+              <span className="feature-divider" />
+              <p>
                 Workers carry a unified, instantly verifiable portfolio of their safety certifications
                 across varying sites and competing employers.
               </p>
+              <span className="feature-spec">self-custody · cross-site portable</span>
             </div>
+          </div>
+
+          <div className="trust-strip">
+            <span>keccak256</span>
+            <span>EVM-compatible</span>
+            <span>OpenZeppelin AccessControl</span>
+            <span>&lt; 1s verification</span>
           </div>
         </div>
       </section>
