@@ -234,29 +234,79 @@ export default function Home() {
       </div>
       <div className="cards">
         {canIssue(me.role) && (
-          <Link href="/issuer" className="card">
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🏫</div>
+          <Link href="/issuer" className="card module-card">
+            <div className="module-head">
+              <span className="module-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
+                  <circle cx="12" cy="8" r="5" />
+                  <path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5" />
+                </svg>
+              </span>
+              <span className="module-eyebrow">Issuance</span>
+            </div>
             <h3>Issuer Portal</h3>
             <p>Secure dashboard for training providers to issue, manage, and instantly revoke credentials on-chain.</p>
+            <div className="module-foot">
+              <span className="module-tag">ISSUER_ROLE</span>
+              <span className="module-cta">Open module<span className="module-arrow">→</span></span>
+            </div>
           </Link>
         )}
-        <Link href="/worker" className="card">
-          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>👷</div>
+        <Link href="/worker" className="card module-card">
+          <div className="module-head">
+            <span className="module-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <circle cx="8" cy="11" r="2" />
+                <path d="M5.5 16c0-1.6 1.1-2.5 2.5-2.5s2.5 0.9 2.5 2.5" />
+                <path d="M14 10h5M14 13.5h5" />
+              </svg>
+            </span>
+            <span className="module-eyebrow">Identity</span>
+          </div>
           <h3>Worker Wallet</h3>
           <p>Your portable professional identity. Carry your verified safety history to any job site securely.</p>
+          <div className="module-foot">
+            <span className="module-tag">SELF-CUSTODY</span>
+            <span className="module-cta">Open module<span className="module-arrow">→</span></span>
+          </div>
         </Link>
         {canIssue(me.role) && (
-          <Link href="/verify" className="card">
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>✅</div>
+          <Link href="/verify" className="card module-card">
+            <div className="module-head">
+              <span className="module-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
+                  <path d="M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z" />
+                  <path d="M9 12l2 2 4-4" />
+                </svg>
+              </span>
+              <span className="module-eyebrow">Verification</span>
+            </div>
             <h3>Live Verification</h3>
             <p>Site managers can query the blockchain to cryptographically confirm worker compliance instantly.</p>
+            <div className="module-foot">
+              <span className="module-tag">ON-CHAIN READ</span>
+              <span className="module-cta">Open module<span className="module-arrow">→</span></span>
+            </div>
           </Link>
         )}
         {isAdmin(me.role) && (
-          <Link href="/admin" className="card">
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🛠️</div>
+          <Link href="/admin" className="card module-card">
+            <div className="module-head">
+              <span className="module-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
+                </svg>
+              </span>
+              <span className="module-eyebrow">Governance</span>
+            </div>
             <h3>User Administration</h3>
             <p>Manage accounts and grant or revoke issuer access across the network.</p>
+            <div className="module-foot">
+              <span className="module-tag">ADMIN_ROLE</span>
+              <span className="module-cta">Open module<span className="module-arrow">→</span></span>
+            </div>
           </Link>
         )}
       </div>

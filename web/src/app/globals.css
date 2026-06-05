@@ -175,6 +175,102 @@ small {
   font-size: 0.95rem;
 }
 
+.module-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.module-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(255,184,0,0.7), transparent);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.cards .module-card:hover::before {
+  opacity: 1;
+}
+
+.module-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.module-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: linear-gradient(135deg, rgba(255,184,0,0.16), rgba(255,184,0,0.03));
+  border: 1px solid rgba(255,184,0,0.2);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.cards .module-card:hover .module-icon {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255,184,0,0.18);
+}
+
+.module-eyebrow {
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,184,0,0.7);
+}
+
+.module-card p {
+  flex: 1;
+  line-height: 1.6;
+}
+
+.module-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border);
+}
+
+.module-tag {
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  color: rgba(148,163,184,0.85);
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+}
+
+.module-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.module-arrow {
+  transition: transform 0.25s ease;
+}
+
+.cards .module-card:hover .module-arrow {
+  transform: translateX(4px);
+}
+
 .form {
   display: flex;
   flex-direction: column;
