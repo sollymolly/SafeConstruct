@@ -33,6 +33,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const target = await prisma.user.findUnique({ where: { id } });
   if (!target) return NextResponse.json({ error: "user not found" }, { status: 404 });
 
+  // An admin can only manage members of their OWN organization. Treat a cross-org
+  // target as not found so the admin can't probe or modify other orgs' users.
+  if (target.organizationId !== me.organizationId) {
+    return NextResponse.json({ error: "user not found" }, { status: 404 });
+  }
+
   const updated = await prisma.user.update({ where: { id }, data: { role } });
   return NextResponse.json({ ok: true, user: { id: updated.id, role: updated.role } });
 }

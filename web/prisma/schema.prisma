@@ -24,14 +24,43 @@ model User {
   email     String   @unique
   name      String
   // WORKER | ISSUER | ADMIN. Stored as a string and validated via the Role type
-  // in src/types/credential.ts. Sign-up always creates WORKER; only an ADMIN can
-  // promote to ISSUER/ADMIN.
+  // in src/types/credential.ts. New accounts join as WORKER; the org's configured
+  // adminEmail becomes ADMIN, and that admin promotes workers to ISSUER. Roles are
+  // per-organization: a user who moves to another org is re-evaluated there.
   role      String   @default("WORKER")
+  // The organization (construction company) this user belongs to. An email is
+  // scoped to exactly ONE org at a time — an account created under one org cannot
+  // sign in against another. Nullable for legacy accounts (created before orgs)
+  // and for "shadow" worker rows an issuer creates before the worker signs up;
+  // both get bound on next sign-in. A worker can move between orgs (self-service
+  // on /profile); their credentials travel with them since those key on User.id.
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
   createdAt DateTime @default(now())
 
   wallet              Wallet?
   issuedCredentials   Credential[] @relation("Issuer")
   receivedCredentials Credential[] @relation("Worker")
+
+  @@index([organizationId])
+}
+
+// A construction company. Workers, issuers, and that company's single ADMIN all
+// belong to one organization. Seeded by the platform owner today
+// (prisma/seed.mjs → `npm run db:seed`); a platform super-admin UI can manage
+// these rows at runtime later without a schema change.
+model Organization {
+  id         String   @id @default(uuid())
+  name       String
+  // The code people type on sign-up / log-in to join this org. Stored normalized
+  // (UPPERCASE, trimmed) and compared case-insensitively.
+  joinCode   String   @unique
+  // The single account auto-promoted to ADMIN for this org (lowercased email).
+  // Optional so an org can be seeded before its admin has signed up.
+  adminEmail String?
+  createdAt  DateTime @default(now())
+
+  users User[]
 }
 
 // One custodial wallet per user. The private key is encrypted at rest

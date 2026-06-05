@@ -19,6 +19,7 @@ const linkButton: React.CSSProperties = {
 };
 
 export default function LoginPage() {
+  const [orgCode, setOrgCode] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,6 +44,22 @@ export default function LoginPage() {
     if (error) {
       setBusy(false);
       return setError(error.message);
+    }
+
+    // Enforce organization scoping: the entered code must match this account's
+    // org. A mismatch signs the session back out — an org-1 email can't log in to
+    // org-2. (To actually move orgs, use the switch on /profile.)
+    const code = orgCode.trim().toUpperCase();
+    const res = await fetch("/api/auth/verify-org", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || !d.ok) {
+      await supabase.auth.signOut();
+      setBusy(false);
+      return setError(d.error || "This account isn't part of that organization.");
     }
 
     // Honor an explicit redirect (e.g. a protected page sent the user here),
@@ -123,6 +140,17 @@ export default function LoginPage() {
       <h1>Log in</h1>
       <p className="lead">Welcome back. Access your credentials and dashboards.</p>
       <form onSubmit={login} className="card form">
+        <label>
+          Organization Code
+          <input
+            value={orgCode}
+            onChange={e => setOrgCode(e.target.value)}
+            placeholder="FAKE-7F3K"
+            autoCapitalize="characters"
+            style={{ textTransform: "uppercase" }}
+            required
+          />
+        </label>
         <label>
           Email Address
           <input

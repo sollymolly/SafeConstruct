@@ -1,25 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
+import type { UserWithWallet } from "@/lib/users";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs"; // uses Prisma + Supabase server client
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function publicUser(u: {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  wallet: { address: string } | null;
-}) {
+function publicUser(u: UserWithWallet) {
   return {
     id: u.id,
     email: u.email,
     name: u.name,
     role: u.role,
     address: u.wallet?.address ?? null,
+    // The org the account belongs to (null only for legacy/shadow rows not yet
+    // bound). The client uses this to show membership and gate the org switch.
+    organization: u.organization
+      ? { id: u.organization.id, name: u.organization.name }
+      : null,
   };
 }
 
@@ -100,7 +100,7 @@ export async function PATCH(req: Request) {
   const updated = await prisma.user.update({
     where: { id: me.id },
     data: { email },
-    include: { wallet: true },
+    include: { wallet: true, organization: true },
   });
 
   return NextResponse.json({ user: publicUser(updated) });

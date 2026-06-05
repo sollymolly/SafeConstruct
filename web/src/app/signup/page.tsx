@@ -12,6 +12,7 @@ export default function SignUpPage() {
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [orgCode, setOrgCode] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -33,13 +34,33 @@ export default function SignUpPage() {
     }
     const name = `${first} ${last}`;
 
+    const code = orgCode.trim().toUpperCase();
+    if (!code) return setError("Enter your organization's join code.");
+
     setBusy(true);
+
+    // Confirm the code maps to a real organization before creating the account,
+    // so a bad code fails here (with the company name as feedback) rather than
+    // leaving an org-less login.
+    const res = await fetch("/api/orgs/resolve", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    const org = await res.json().catch(() => ({}));
+    if (!res.ok || !org.name) {
+      setBusy(false);
+      return setError(org.error || "Unknown organization code.");
+    }
+
     const supabase = createSupabaseBrowserClient();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { name, firstName: first, lastName: last },
+        // organizationCode rides in user_metadata so the account is bound to its
+        // org on first provisioning (server re-validates it, see provisionUser).
+        data: { name, firstName: first, lastName: last, organizationCode: code },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -47,7 +68,7 @@ export default function SignUpPage() {
     if (error) return setError(error.message);
     // If "Confirm email" is OFF, signUp returns a live session → go straight in.
     if (data.session) {
-      router.replace("/worker");
+      router.replace("/");
       router.refresh();
       return;
     }
@@ -97,6 +118,20 @@ export default function SignUpPage() {
             maxLength={NAME_MAX}
             required
           />
+        </label>
+        <label>
+          Organization Code
+          <input
+            value={orgCode}
+            onChange={(e) => setOrgCode(e.target.value)}
+            placeholder="FAKE-7F3K"
+            autoCapitalize="characters"
+            style={{ textTransform: "uppercase" }}
+            required
+          />
+          <small style={{ color: "var(--muted)", fontWeight: 400 }}>
+            The code your company admin gave you. It ties this account to one organization.
+          </small>
         </label>
         <label>
           Email Address

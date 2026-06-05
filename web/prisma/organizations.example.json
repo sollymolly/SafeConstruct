@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Acme Construction",
+    "joinCode": "ACME-7F3K",
+    "adminEmail": "alice@acme.com"
+  },
+  {
+    "name": "BuildCo",
+    "joinCode": "BUILDCO-2X9P",
+    "adminEmail": "bob@buildco.com"
+  }
+]

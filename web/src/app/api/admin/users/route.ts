@@ -4,7 +4,11 @@ import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-/** GET /api/admin/users (admin only) → all users, for role management. */
+/**
+ * GET /api/admin/users (admin only) → the users in the admin's OWN organization,
+ * for role management. There is one admin per org, and they only see/manage their
+ * own org's members.
+ */
 export async function GET() {
   const me = await getCurrentUser();
   if (!me || me.role !== "ADMIN") {
@@ -12,6 +16,9 @@ export async function GET() {
   }
 
   const users = await prisma.user.findMany({
+    // Scope to this admin's org. (A global break-glass admin with no org sees only
+    // themselves rather than every org's users.)
+    where: me.organizationId ? { organizationId: me.organizationId } : { id: me.id },
     include: { wallet: true },
     orderBy: { createdAt: "desc" },
   });

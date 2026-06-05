@@ -68,9 +68,24 @@ export async function POST(req: Request) {
     );
   }
 
-  const worker = await findOrCreateUser({ email: workerEmail });
+  // Issue within your own organization: a worker created here is placed in the
+  // issuer's org, and an existing worker who belongs to a different org is refused.
+  const worker = await findOrCreateUser({
+    email: workerEmail,
+    organizationId: issuer.organizationId,
+  });
   if (!worker.wallet) {
     return NextResponse.json({ error: "worker has no wallet" }, { status: 500 });
+  }
+  if (
+    issuer.organizationId &&
+    worker.organizationId &&
+    worker.organizationId !== issuer.organizationId
+  ) {
+    return NextResponse.json(
+      { error: "That worker is not a part of your organization." },
+      { status: 403 }
+    );
   }
 
   const id = randomUUID();

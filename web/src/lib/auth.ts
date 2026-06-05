@@ -11,7 +11,12 @@ import { provisionUser } from "@/lib/users";
  * same shape the API routes depend on: { id, email, name, role, wallet, ... }.
  */
 export async function getCurrentUser() {
-  let session: { authId: string; email: string; name?: string } | null = null;
+  let session: {
+    authId: string;
+    email: string;
+    name?: string;
+    joinCode?: string;
+  } | null = null;
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -21,6 +26,10 @@ export async function getCurrentUser() {
         authId: data.user.id,
         email: data.user.email,
         name: (data.user.user_metadata?.name as string | undefined) ?? undefined,
+        // Set at sign-up so a brand-new (or just-confirmed) account can be bound
+        // to its org on first provisioning, even before the first interactive login.
+        joinCode:
+          (data.user.user_metadata?.organizationCode as string | undefined) ?? undefined,
       };
     }
   } catch {
