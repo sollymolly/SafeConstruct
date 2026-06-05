@@ -45,6 +45,24 @@ export async function isIssuer(addr: Hex): Promise<boolean> {
 
 // ---- relayer/admin helpers -------------------------------------------------
 
+/**
+ * Poll until `check` passes, to ride out the read-after-write lag of a
+ * load-balanced public RPC: a transaction confirmed on one node isn't always
+ * instantly visible on the node that serves the next request. Resolves as soon as
+ * the state reads back consistently (effectively immediately on a single-node
+ * local chain).
+ */
+async function waitForConsistency(
+  check: () => Promise<boolean>,
+  tries = 8,
+  delayMs = 1500
+): Promise<void> {
+  for (let i = 0; i < tries; i++) {
+    if (await check()) return;
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+}
+
 /** Grant ISSUER_ROLE to an issuer's custodial wallet (idempotent). */
 export async function ensureIssuerRole(issuerAddress: Hex): Promise<void> {
   if (await isIssuer(issuerAddress)) return;
@@ -54,6 +72,10 @@ export async function ensureIssuerRole(issuerAddress: Hex): Promise<void> {
     args: [getAddress(issuerAddress)],
   });
   await publicClient.waitForTransactionReceipt({ hash });
+  // The grant is mined, but the issuer's own issue tx runs moments later and may
+  // hit an RPC node that hasn't seen it yet (-> AccessControlUnauthorizedAccount).
+  // Wait until the role reads back consistently before returning.
+  await waitForConsistency(() => isIssuer(issuerAddress));
 }
 
 /**
@@ -74,6 +96,10 @@ export async function ensureGas(addr: Hex): Promise<void> {
     value: topUp,
   });
   await publicClient.waitForTransactionReceipt({ hash });
+  // Likewise wait until the funded balance is visible before the issuer spends it.
+  await waitForConsistency(
+    async () => (await publicClient.getBalance({ address: getAddress(addr) })) >= minBalance
+  );
 }
 
 // ---- writes ----------------------------------------------------------------
