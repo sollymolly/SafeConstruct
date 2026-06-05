@@ -163,8 +163,8 @@ export default function AboutPage() {
           <div className="bio-grid">
             <div className="bio">
               <Image
-                src="/363633-200.png"
-                alt="Photo of Jaden Cutinha (placeholder)"
+                src="/1735506656976.jpeg"
+                alt="Photo of Jaden Cutinha"
                 width={128}
                 height={128}
                 className="bio-photo"
@@ -180,7 +180,7 @@ export default function AboutPage() {
             </div>
             <div className="bio">
               <Image
-                src="/363633-200.png"
+                src="/1751746147623.jpeg"
                 alt="Photo of Sol Park (placeholder)"
                 width={128}
                 height={128}
