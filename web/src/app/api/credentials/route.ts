@@ -74,6 +74,14 @@ export async function POST(req: Request) {
     email: workerEmail,
     organizationId: issuer.organizationId,
   });
+  // An issuer/admin must not issue a credential to themselves — a credential is an
+  // attestation about *another* person, so self-issuance is never legitimate.
+  if (worker.id === issuer.id) {
+    return NextResponse.json(
+      { error: "You can't issue a credential to yourself." },
+      { status: 400 }
+    );
+  }
   if (!worker.wallet) {
     return NextResponse.json({ error: "worker has no wallet" }, { status: 500 });
   }
