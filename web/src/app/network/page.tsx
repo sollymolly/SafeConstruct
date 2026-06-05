@@ -127,6 +127,7 @@ export default function NetworkGraphPage() {
       </div>
 
       <div className="dashboard-layout" style={{ gridTemplateColumns: "1.6fr 1fr" }}>
+        <div className="graph-column">
         <div className="graph-card">
           {empty ? (
             <div className="empty-state" style={{ background: "transparent", border: "none" }}>
@@ -214,18 +215,20 @@ export default function NetworkGraphPage() {
               })}
             </svg>
           )}
+        </div>
 
           <div className="graph-legend">
-            <div className="row" style={{ marginBottom: "0.4rem" }}>
+            <div className="row">
               <span className="dot" style={{ background: "var(--brand)" }} /> <small>Issuer</small>
             </div>
-            <div className="row" style={{ marginBottom: "0.6rem" }}>
+            <div className="row">
               <span className="dot" style={{ background: "var(--ok)" }} /> <small>Worker</small>
             </div>
-            <div className="row" style={{ marginBottom: "0.3rem" }}>
+            <span className="legend-sep" />
+            <div className="row">
               <span className="dash" style={{ background: "var(--ok)" }} /> <small>Verified link</small>
             </div>
-            <div className="row" style={{ marginBottom: "0.3rem" }}>
+            <div className="row">
               <span className="dash" style={{ background: "var(--warn)" }} /> <small>Expired</small>
             </div>
             <div className="row">
