@@ -53,14 +53,22 @@ export default function AboutPage() {
         <div className="paper-section">
           <h2>1. Introduction</h2>
           <p>
-            [Placeholder — replace with your framing.] A worker arriving at a new
-            site must prove they are cleared for the work: OSHA training, equipment
-            certifications, and site-specific inductions. The status quo relies on
-            physical cards and trust in whoever issued them. Fraudulent or expired
-            credentials are difficult to detect at the gate, and a worker&apos;s
-            verified history does not travel cleanly between employers. SafeConstruct
-            exists to make a worker&apos;s safety record portable, instantly
-            verifiable, and tamper-evident.
+            The construction industry depends on trust. Before stepping onto a job site, 
+            workers must demonstrate that they have completed the training and certifications
+            required to perform their work safely. Yet credential management remains fragmented
+            across paper cards, PDFs, emails, and isolated employer databases. As workers move between
+            employers and projects, proving compliance becomes slow, expensive, and prone to error.
+            These inefficiencies create real risks. Site managers often spend valuable time manually 
+            verifying credentials, workers are frequently required to repeat training simply because 
+            records cannot be located, and fraudulent or expired certifications can go undetected. 
+            The absence of a shared, verifiable credential standard limits workforce mobility and 
+            increases administrative overhead across the industry. SafeConstruct was created to address
+            this problem. Our platform provides a portable, tamper-evident credential layer that allows
+            workers, training providers, and employers to securely issue, manage, and verify safety
+            certifications. By combining modern cryptography with blockchain-based verification,
+            SafeConstruct transforms safety credentials from isolated documents into trusted digital
+            assets that can be instantly validated anywhere they are needed.
+
           </p>
         </div>
 
@@ -150,11 +158,19 @@ export default function AboutPage() {
         <div className="paper-section">
           <h2>5. Conclusion</h2>
           <p>
-            [Placeholder — replace with your closing statement.] By anchoring trust to
-            a public ledger instead of to paper or to any single company,
-            SafeConstruct turns safety credentials into a shared, tamper-evident
-            standard. The result is a workforce that is provably compliant, mobile
-            between sites, and protected from credential fraud.
+            SafeConstruct represents a practical application of blockchain
+            technology to a real operational challenge faced throughout the
+            construction industry. Rather than replacing existing training providers
+            or compliance processes, the platform strengthens them by creating a shared 
+            source of trust for credential verification. By anchoring credential integrity 
+            to a public blockchain while keeping sensitive information securely stored off-chain, 
+            SafeConstruct enables workers to carry their qualifications across employers, 
+            allows issuers to maintain control over certification lifecycles, and gives site 
+            managers immediate confidence in workforce compliance. As the industry continues 
+            to modernize, portable and verifiable safety credentials have the potential to 
+            become foundational infrastructure for a safer, more efficient, and more connected 
+            construction workforce.
+
           </p>
         </div>
 
@@ -172,10 +188,8 @@ export default function AboutPage() {
               <h3>Jaden Cutinha</h3>
               <div className="bio-role">Co-Founder</div>
               <p>
-                [Placeholder bio — edit this later.] Jaden focuses on the protocol and
-                product behind SafeConstruct. Add a sentence or two here about
-                background, interests, and what drew you to building verifiable safety
-                infrastructure.
+                Jaden focuses on the protocol and product behind SafeConstruct. 
+                Jaden is a sophomore at Princeton studying Computer Science and Quantitative Economics.
               </p>
             </div>
             <div className="bio">
@@ -189,9 +203,8 @@ export default function AboutPage() {
               <h3>Sol Park</h3>
               <div className="bio-role">Co-Founder</div>
               <p>
-                [Placeholder bio — edit this later.] Sol focuses on the experience and
-                systems behind SafeConstruct. Add a sentence or two here about
-                background, interests, and what drew you to the project.
+                  Sol focuses on the experience and systems behind SafeConstruct.
+                  Sol is a sophomore at Princeton studying Psychology and Gender Studies along with a minor in Slavic Studies.
               </p>
             </div>
           </div>
