@@ -4,12 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { canIssue, isAdmin } from "@/lib/roles";
-
-type Me = { id: string; email: string; name: string; role: string; address: string | null } | null;
+import { useAuth } from "@/lib/auth-context";
 
 export default function Home() {
-  const [me, setMe] = useState<Me>(null);
-  const [loading, setLoading] = useState(true);
+  // Shared with the navbar so both resolve in the same render — no staggered load.
+  const { user: me, loading } = useAuth();
 
   const [scrollY, setScrollY] = useState(0);
 
@@ -21,15 +20,6 @@ export default function Home() {
     window.addEventListener("scroll", handleScroll);
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    fetch(`/api/auth?t=${Date.now()}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setMe(d.user);
-        setLoading(false);
-      });
   }, []);
 
   if (loading) {

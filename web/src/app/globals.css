@@ -314,6 +314,28 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(255, 176, 32, 0.2);
 }
 
+.checkbox-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: -0.5rem;
+  font-size: 0.88rem;
+  font-weight: 400;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
 button {
   background: var(--brand);
   color: var(--text-dark);
@@ -351,6 +373,47 @@ button.ghost {
 
 button.ghost:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.1);
+}
+
+.admin-search {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-search input {
+  flex: 1;
+}
+
+.admin-sort {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.8rem 2.2rem 0.8rem 1rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  transition: border-color 0.2s ease;
+}
+
+.admin-sort:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(255, 176, 32, 0.2);
+}
+
+.admin-search-count {
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .list {

@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth-context";
+
+const ORG_CODE_KEY = "safeconstruct.orgCode";
 
 // A plain text/link-styled button (the global <button> is a filled amber pill,
 // so we override it here for the inline "Forgot password?" / "Back" toggles).
@@ -19,6 +22,7 @@ const linkButton: React.CSSProperties = {
 };
 
 export default function LoginPage() {
+  const { setTransitioning } = useAuth();
   const [orgCode, setOrgCode] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,6 +32,17 @@ export default function LoginPage() {
   // Toggles the form between normal login and the password-reset request.
   const [mode, setMode] = useState<"login" | "forgot">("login");
   const [resetSent, setResetSent] = useState(false);
+
+  // Remember the org code (opt-in). Prefill it from a prior successful login the
+  // same way browsers restore a saved email — read after mount to stay SSR-safe.
+  const [remember, setRemember] = useState(true);
+  useEffect(() => {
+    const saved = localStorage.getItem(ORG_CODE_KEY);
+    if (saved) {
+      setOrgCode(saved);
+      setRemember(true);
+    }
+  }, []);
 
   function switchMode(next: "login" | "forgot") {
     setMode(next);
@@ -46,6 +61,11 @@ export default function LoginPage() {
       return setError(error.message);
     }
 
+    // Sign-in fired an auth-state change; mark a transition now so the navbar
+    // stays bare (rather than flashing the logged-in nav on this login page)
+    // until the dashboard reload takes over.
+    setTransitioning(true);
+
     // Enforce organization scoping: the entered code must match this account's
     // org. A mismatch signs the session back out — an org-1 email can't log in to
     // org-2. (To actually move orgs, use the switch on /profile.)
@@ -58,9 +78,14 @@ export default function LoginPage() {
     const d = await res.json().catch(() => ({}));
     if (!res.ok || !d.ok) {
       await supabase.auth.signOut();
+      setTransitioning(false);
       setBusy(false);
       return setError(d.error || "This account isn't part of that organization.");
     }
+
+    // Only persist once the code is confirmed valid for this account.
+    if (remember) localStorage.setItem(ORG_CODE_KEY, code);
+    else localStorage.removeItem(ORG_CODE_KEY);
 
     // Honor an explicit redirect (e.g. a protected page sent the user here),
     // otherwise land everyone on the home dashboard regardless of role.
@@ -150,6 +175,14 @@ export default function LoginPage() {
             style={{ textTransform: "uppercase" }}
             required
           />
+        </label>
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={e => setRemember(e.target.checked)}
+          />
+          <span>Remember organization code on this device</span>
         </label>
         <label>
           Email Address

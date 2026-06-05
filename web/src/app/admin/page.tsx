@@ -9,7 +9,10 @@ type UserRow = {
   name: string;
   role: string;
   address: string | null;
+  createdAt: string;
 };
+
+type SortKey = "name" | "joined";
 
 export default function AdminPage() {
   const [role, setRole] = useState<string | null>(null);
@@ -17,6 +20,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("name");
 
   async function load() {
     const me = await fetch("/api/auth")
@@ -51,6 +56,23 @@ export default function AdminPage() {
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role: next } : u)));
   }
 
+  const q = query.trim().toLowerCase();
+  const filtered = (
+    q
+      ? users.filter(
+          (u) =>
+            u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+        )
+      : users
+  )
+    .slice()
+    .sort((a, b) =>
+      sort === "name"
+        ? a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+        : // Newest first by join date.
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
   if (loading) return null;
 
   if (role !== "ADMIN") {
@@ -77,14 +99,43 @@ export default function AdminPage() {
 
       {error && <p className="msg error">{error}</p>}
 
+      {users.length > 0 && (
+        <div className="admin-search">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name or email…"
+            aria-label="Search employees by name or email"
+          />
+          <select
+            className="admin-sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            aria-label="Sort employees"
+          >
+            <option value="name">Sort: A–Z</option>
+            <option value="joined">Sort: Recently joined</option>
+          </select>
+          <span className="admin-search-count">
+            {filtered.length} of {users.length}
+          </span>
+        </div>
+      )}
+
       {users.length === 0 ? (
         <div className="empty-state">
           <h3>No users yet</h3>
           <p>Accounts appear here as people sign up.</p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state">
+          <h3>No matches</h3>
+          <p>No employees match &ldquo;{query}&rdquo;.</p>
+        </div>
       ) : (
         <ul className="list">
-          {users.map((u) => (
+          {filtered.map((u) => (
             <li key={u.id} className="card row between">
               <div className="list-item-content">
                 <strong style={{ fontSize: "1.1rem" }}>{u.name}</strong>

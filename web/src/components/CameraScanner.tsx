@@ -23,7 +23,7 @@ export default function CameraScanner({ onSimulateScan }: { onSimulateScan: () =
   if (!active) {
     return (
       <button onClick={() => setActive(true)} className="ghost" style={{ width: "100%", padding: "2rem", border: "2px dashed var(--brand)" }}>
-        📷 Activate Field Camera Scanner
+        Activate Field Camera Scanner
       </button>
     );
   }
