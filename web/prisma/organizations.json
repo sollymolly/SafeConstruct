@@ -9,5 +9,11 @@
     "name": "Beta Builders",
     "joinCode": "BETA-57O2",
     "adminEmail": "admin@fake.com"
+  },
+
+  {
+    "name": "IC3 Blockchain",
+    "joinCode": "IC3B-2A4C",
+    "adminEmail": "haroon@fake.com"
   }
 ]
