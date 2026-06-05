@@ -57,17 +57,21 @@ export async function ensureIssuerRole(issuerAddress: Hex): Promise<void> {
 }
 
 /**
- * On a local chain, top up an issuer wallet from the relayer so it can pay gas.
- * On a real testnet, issuer wallets must be funded out of band (faucet), so we
- * no-op here.
+ * Top up an issuer's custodial wallet from the relayer so it can pay gas for its
+ * own issue/revoke transactions. On the local Hardhat chain funds are free, so we
+ * keep a generous balance; on a public testnet we top up tiny amounts — testnet
+ * gas (especially on an L2 like Base Sepolia) is cheap and faucets are stingy, so
+ * a fraction of a cent's worth of ETH covers many transactions. The relayer must
+ * therefore hold enough native gas on whichever chain CHAIN_TARGET selects.
  */
 export async function ensureGas(addr: Hex): Promise<void> {
-  if (!IS_LOCAL) return;
+  const minBalance = IS_LOCAL ? parseEther("0.05") : parseEther("0.0001");
+  const topUp = IS_LOCAL ? parseEther("1") : parseEther("0.0003");
   const balance = await publicClient.getBalance({ address: getAddress(addr) });
-  if (balance > parseEther("0.05")) return;
+  if (balance >= minBalance) return;
   const hash = await relayerClient().sendTransaction({
     to: getAddress(addr),
-    value: parseEther("1"),
+    value: topUp,
   });
   await publicClient.waitForTransactionReceipt({ hash });
 }
