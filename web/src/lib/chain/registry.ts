@@ -65,8 +65,8 @@ export async function ensureIssuerRole(issuerAddress: Hex): Promise<void> {
  * therefore hold enough native gas on whichever chain CHAIN_TARGET selects.
  */
 export async function ensureGas(addr: Hex): Promise<void> {
-  const minBalance = IS_LOCAL ? parseEther("0.05") : parseEther("0.0001");
-  const topUp = IS_LOCAL ? parseEther("1") : parseEther("0.0003");
+  const minBalance = IS_LOCAL ? parseEther("0.05") : parseEther("0.00002");
+  const topUp = IS_LOCAL ? parseEther("1") : parseEther("0.0001");
   const balance = await publicClient.getBalance({ address: getAddress(addr) });
   if (balance >= minBalance) return;
   const hash = await relayerClient().sendTransaction({
