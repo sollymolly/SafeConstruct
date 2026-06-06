@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import {
   credentialInclude,
+  credentialScope,
   resolveStatuses,
   isCompromised,
   type CredentialWithParties,
@@ -28,12 +29,7 @@ export async function GET() {
   const me = await getCurrentUser();
   if (!me) return NextResponse.json({ error: "not signed in" }, { status: 401 });
 
-  const where =
-    me.role === "ISSUER"
-      ? { issuerId: me.id }
-      : me.role === "WORKER"
-        ? { workerId: me.id }
-        : {};
+  const where = credentialScope(me);
 
   const creds = (await prisma.credential.findMany({
     where,
@@ -97,13 +93,31 @@ export async function GET() {
     nodes.set(me.id, { id: me.id, label: me.name, type: centerType, total: 0, valid: 0 });
   }
 
+  // Compliance indicator: surface holders in the admin's org who hold no
+  // credential at all. They join the graph as disconnected nodes so coverage
+  // gaps are visible at a glance, not just the people already credentialed.
+  let uncredentialed = 0;
+  if (kind === "network" && me.organizationId) {
+    const orgWorkers = await prisma.user.findMany({
+      where: { organizationId: me.organizationId, role: "WORKER" },
+      select: { id: true, name: true },
+    });
+    for (const w of orgWorkers) {
+      if (!nodes.has(w.id)) {
+        nodes.set(w.id, { id: w.id, label: w.name, type: "worker", total: 0, valid: 0 });
+        uncredentialed += 1;
+      }
+    }
+  }
+
   return NextResponse.json({
     role: me.role,
     kind,
     centerId,
     centerType,
     onChain,
-    nodes: [...nodes.values()],
+    uncredentialed,
+    nodes: [...nodes.values()].map((n) => ({ ...n, credentialed: n.total > 0 })),
     edges: [...edges.values()],
   });
 }

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import {
   credentialInclude,
+  credentialScope,
   resolveStatuses,
   isCompromised,
   type CredentialWithParties,
@@ -18,12 +19,7 @@ export async function GET() {
   const me = await getCurrentUser();
   if (!me) return NextResponse.json({ error: "not signed in" }, { status: 401 });
 
-  const where =
-    me.role === "ISSUER"
-      ? { issuerId: me.id }
-      : me.role === "WORKER"
-        ? { workerId: me.id }
-        : {};
+  const where = credentialScope(me);
 
   const creds = (await prisma.credential.findMany({
     where,
