@@ -1,12 +1,20 @@
 [
   {
-    "name": "Acme Construction",
+    "name": "Acme Safety Academy",
     "joinCode": "ACME-7F3K",
+    "type": "SCHOOL",
     "adminEmail": "alice@acme.com"
   },
   {
     "name": "BuildCo",
     "joinCode": "BUILDCO-2X9P",
+    "type": "COMPANY",
     "adminEmail": "bob@buildco.com"
+  },
+  {
+    "name": "OSHA Training Institute",
+    "joinCode": "OSHA-2X9P",
+    "type": "ACCREDITOR",
+    "adminEmail": "carol@osha.example"
   }
 ]

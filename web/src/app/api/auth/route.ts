@@ -18,8 +18,11 @@ function publicUser(u: UserWithWallet) {
     // The org the account belongs to (null only for legacy/shadow rows not yet
     // bound). The client uses this to show membership and gate the org switch.
     organization: u.organization
-      ? { id: u.organization.id, name: u.organization.name }
+      ? { id: u.organization.id, name: u.organization.name, type: u.organization.type }
       : null,
+    // Convenience mirror of the org type so callers can gate features without
+    // digging into the organization object.
+    orgType: u.organization?.type ?? null,
   };
 }
 

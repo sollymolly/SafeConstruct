@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { canIssue, isAdmin } from "@/lib/roles";
+import { orgCanIssue, orgCanVerify, orgHasWorkerWallet } from "@/lib/orgTypes";
 import { useAuth } from "@/lib/auth-context";
 
 export default function Home() {
@@ -223,7 +224,7 @@ export default function Home() {
         </p>
       </div>
       <div className="cards">
-        {canIssue(me.role) && (
+        {canIssue(me.role) && orgCanIssue(me.orgType) && (
           <Link href="/issuer" className="card module-card">
             <div className="module-head">
               <span className="module-icon">
@@ -242,26 +243,28 @@ export default function Home() {
             </div>
           </Link>
         )}
-        <Link href="/worker" className="card module-card">
-          <div className="module-head">
-            <span className="module-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <circle cx="8" cy="11" r="2" />
-                <path d="M5.5 16c0-1.6 1.1-2.5 2.5-2.5s2.5 0.9 2.5 2.5" />
-                <path d="M14 10h5M14 13.5h5" />
-              </svg>
-            </span>
-            <span className="module-eyebrow">Identity</span>
-          </div>
-          <h3>Worker Wallet</h3>
-          <p>Your portable professional identity. Carry your verified safety history to any job site securely.</p>
-          <div className="module-foot">
-            <span className="module-tag">SELF-CUSTODY</span>
-            <span className="module-cta">Open module<span className="module-arrow">→</span></span>
-          </div>
-        </Link>
-        {canIssue(me.role) && (
+        {orgHasWorkerWallet(me.orgType) && (
+          <Link href="/worker" className="card module-card">
+            <div className="module-head">
+              <span className="module-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                  <circle cx="8" cy="11" r="2" />
+                  <path d="M5.5 16c0-1.6 1.1-2.5 2.5-2.5s2.5 0.9 2.5 2.5" />
+                  <path d="M14 10h5M14 13.5h5" />
+                </svg>
+              </span>
+              <span className="module-eyebrow">Identity</span>
+            </div>
+            <h3>Worker Wallet</h3>
+            <p>Your portable professional identity. Carry your verified safety history to any job site securely.</p>
+            <div className="module-foot">
+              <span className="module-tag">SELF-CUSTODY</span>
+              <span className="module-cta">Open module<span className="module-arrow">→</span></span>
+            </div>
+          </Link>
+        )}
+        {canIssue(me.role) && orgCanVerify(me.orgType) && (
           <Link href="/verify" className="card module-card">
             <div className="module-head">
               <span className="module-icon">

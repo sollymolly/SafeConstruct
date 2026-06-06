@@ -59,6 +59,7 @@ export default function NetworkGraphPage() {
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
+  const [restricted, setRestricted] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,6 +67,10 @@ export default function NetworkGraphPage() {
       .then((r) => {
         if (r.status === 401) {
           setDenied(true);
+          return null;
+        }
+        if (r.status === 403) {
+          setRestricted(true);
           return null;
         }
         return r.json();
@@ -106,6 +111,21 @@ export default function NetworkGraphPage() {
         <p className="lead">Your network is built from your own verified credentials.</p>
         <Link href="/login?redirect=/network" className="card" style={{ display: "block" }}>
           Log in →
+        </Link>
+      </section>
+    );
+  }
+
+  if (restricted) {
+    return (
+      <section className="auth-container">
+        <h1>Not available for your organization</h1>
+        <p className="lead">
+          The trust graph maps credential issuance, which belongs to training providers.
+          Construction companies use Verify Site instead.
+        </p>
+        <Link href="/" className="card" style={{ display: "block" }}>
+          Back home →
         </Link>
       </section>
     );

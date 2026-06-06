@@ -3,8 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { canIssue } from "@/lib/roles";
+import { orgCanIssue } from "@/lib/orgTypes";
 
-type Me = { id: string; email: string; name: string; role: string; address: string | null } | null;
+type Me = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  address: string | null;
+  orgType: string | null;
+} | null;
 type Cred = {
   id: string;
   title: string;
@@ -89,6 +97,21 @@ export default function IssuerPage() {
         <p className="lead">
           Your account ({me.email}) isn&apos;t an authorized issuer yet. Ask an admin to grant
           issuer access, then return here.
+        </p>
+        <Link href="/" className="card" style={{ display: "block" }}>
+          Back home →
+        </Link>
+      </section>
+    );
+  }
+
+  if (!orgCanIssue(me.orgType)) {
+    return (
+      <section className="auth-container">
+        <h1>Issuing isn&apos;t available here</h1>
+        <p className="lead">
+          Only training providers (schools) mint credentials. Your organization is set up to
+          verify workers, not issue.
         </p>
         <Link href="/" className="card" style={{ display: "block" }}>
           Back home →

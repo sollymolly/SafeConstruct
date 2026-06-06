@@ -22,6 +22,12 @@ function normalizeJoinCode(raw) {
   return String(raw ?? "").trim().toUpperCase();
 }
 
+const ORG_TYPES = ["SCHOOL", "COMPANY", "ACCREDITOR"];
+function normalizeType(raw) {
+  const t = String(raw ?? "").trim().toUpperCase();
+  return ORG_TYPES.includes(t) ? t : "COMPANY";
+}
+
 function loadOrgDefs() {
   const fromEnv = process.env.SEED_ORGS_JSON;
   if (fromEnv) {
@@ -52,6 +58,7 @@ async function main() {
     const name = String(def.name ?? "").trim();
     // Accept either `joinCode` or `code` for convenience.
     const joinCode = normalizeJoinCode(def.joinCode ?? def.code);
+    const type = normalizeType(def.type);
     const adminEmail = def.adminEmail
       ? String(def.adminEmail).trim().toLowerCase()
       : null;
@@ -63,11 +70,11 @@ async function main() {
 
     const org = await prisma.organization.upsert({
       where: { joinCode },
-      update: { name, adminEmail },
-      create: { name, joinCode, adminEmail },
+      update: { name, type, adminEmail },
+      create: { name, joinCode, type, adminEmail },
     });
     console.log(
-      `✓ ${org.name}  —  join code ${org.joinCode}  —  admin ${org.adminEmail ?? "(none)"}`
+      `✓ ${org.name} [${org.type}]  —  join code ${org.joinCode}  —  admin ${org.adminEmail ?? "(none)"}`
     );
   }
 }

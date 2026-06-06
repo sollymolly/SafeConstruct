@@ -5,15 +5,32 @@ import Link from "next/link";
 import CameraScanner from "../../components/CameraScanner";
 import CryptoAudit from "../../components/CryptoAudit";
 import { canIssue } from "@/lib/roles";
+import { orgCanVerify } from "@/lib/orgTypes";
 
-type Me = { id: string; email: string; name: string; role: string; address: string | null } | null;
+type Me = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  address: string | null;
+  orgType: string | null;
+} | null;
 type Result = {
   credentialId: string;
   title: string;
   credentialType: string;
   issuerOrg: string;
+  issuedAt: number;
   expiresAt: number;
   status: string;
+  dataHash: string;
+  issuerAddress: string;
+  signature: string | null;
+  signer: string | null;
+  signatureValid: boolean;
+  proof: string;
+  accredited: boolean;
+  accreditorName: string | null;
 };
 type Worker = { name: string; email: string; address: string } | null;
 
@@ -77,12 +94,27 @@ export default function VerifyPage() {
     );
   }
 
+  if (!orgCanVerify(me.orgType)) {
+    return (
+      <section className="auth-container">
+        <h1>Verification is for construction companies</h1>
+        <p className="lead">
+          Site verification belongs to the companies that hire and check workers. Training
+          providers issue credentials; workers carry them.
+        </p>
+        <Link href="/" className="card" style={{ display: "block" }}>
+          Back home →
+        </Link>
+      </section>
+    );
+  }
+
   if (!canIssue(me.role)) {
     return (
       <section className="auth-container">
-        <h1>Issuer access required</h1>
+        <h1>Manager access required</h1>
         <p className="lead">
-          Site verification is available to issuers and admins. Your account
+          Site verification is available to your company&apos;s administrators. Your account
           ({me.email}) doesn&apos;t have access yet.
         </p>
         <Link href="/" className="card" style={{ display: "block" }}>

@@ -4,10 +4,12 @@ import type { Hex } from "viem";
 import { prisma } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import { canIssue } from "@/lib/roles";
+import { orgCanIssue } from "@/lib/orgTypes";
 import { findOrCreateUser } from "@/lib/users";
 import { decryptPrivateKey } from "@/lib/wallet/custodial";
 import { hashCredential, toCredentialId } from "@/lib/hash";
 import { ensureGas, ensureIssuerRole, issueCredential } from "@/lib/chain/registry";
+import { signCredential } from "@/lib/chain/eip712";
 import type { CredentialRecord } from "@/types/credential";
 
 export const runtime = "nodejs";
@@ -46,6 +48,14 @@ export async function POST(req: Request) {
   const issuer = await getCurrentUser();
   if (!issuer || !canIssue(issuer.role)) {
     return NextResponse.json({ error: "must be signed in as an issuer" }, { status: 403 });
+  }
+  // Only training-school orgs may mint; construction companies verify, they
+  // don't issue. Enforced here so the rule holds regardless of the UI.
+  if (!orgCanIssue(issuer.organization?.type)) {
+    return NextResponse.json(
+      { error: "Only training providers (schools) can issue credentials." },
+      { status: 403 }
+    );
   }
   if (!issuer.wallet) {
     return NextResponse.json({ error: "issuer has no wallet" }, { status: 500 });
@@ -121,6 +131,10 @@ export async function POST(req: Request) {
     await ensureGas(issuer.wallet.address as Hex);
     await ensureIssuerRole(issuer.wallet.address as Hex);
 
+    // The issuer's wallet signs the credential (EIP-712). Stored alongside the
+    // record so any verifier can recover the signer without the private key.
+    const signature = await signCredential(issuerKey, record);
+
     const txHash = await issueCredential({
       issuerPrivateKey: issuerKey,
       credentialId,
@@ -142,11 +156,12 @@ export async function POST(req: Request) {
         expiresAt: expiresAtSec ? new Date(expiresAtSec * 1000) : null,
         dataHash,
         txHash,
+        signature,
       },
     });
 
     return NextResponse.json(
-      { credential: { id: saved.id, txHash, dataHash } },
+      { credential: { id: saved.id, txHash, dataHash, signature } },
       { status: 201 }
     );
   } catch (err) {

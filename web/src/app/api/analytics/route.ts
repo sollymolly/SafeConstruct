@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
+import { orgHasAnalytics } from "@/lib/orgTypes";
 import {
   credentialInclude,
   credentialScope,
@@ -18,6 +19,9 @@ const TYPE_COLORS = ["var(--brand)", "var(--ok)", "var(--warn)", "#8b5cf6", "#38
 export async function GET() {
   const me = await getCurrentUser();
   if (!me) return NextResponse.json({ error: "not signed in" }, { status: 401 });
+  if (!orgHasAnalytics(me.organization?.type)) {
+    return NextResponse.json({ error: "not available for this organization type" }, { status: 403 });
+  }
 
   const where = credentialScope(me);
 

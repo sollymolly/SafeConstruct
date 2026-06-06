@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { canIssue, isAdmin } from "@/lib/roles";
+import { orgCanIssue, orgCanVerify, orgHasAnalytics, orgHasWorkerWallet } from "@/lib/orgTypes";
 import { useAuth } from "@/lib/auth-context";
 import Image from "next/image";
 
@@ -69,8 +70,13 @@ export default function Navbar() {
     );
   }
 
-  const canIssueOrVerify = canIssue(user.role);
   const admin = isAdmin(user.role);
+  // Features depend on BOTH the user's role and what their org type is allowed
+  // to do: schools issue, companies verify, accreditors accredit.
+  const showIssuer = canIssue(user.role) && orgCanIssue(user.orgType);
+  const showVerify = canIssue(user.role) && orgCanVerify(user.orgType);
+  const showAnalytics = orgHasAnalytics(user.orgType);
+  const showWallet = orgHasWorkerWallet(user.orgType);
 
   return (
     <header className="nav">
@@ -85,14 +91,14 @@ export default function Navbar() {
         <span>SafeConstruct</span>
       </Link>
         <nav style={{ display: "flex", alignItems: "center" }}>
-          <Link href="/analytics">Analytics</Link>
-          <Link href="/network">Trust Graph</Link>
-          <span style={{ color: "var(--border)", margin: "0 1rem" }}>|</span>
-          {/* Issuing and site-verification are issuer/admin tools — workers don't
-              need them (the issuing API is role-gated server-side anyway). */}
-          {canIssueOrVerify && <Link href="/issuer">Issuer Portal</Link>}
-          <Link href="/worker">Worker Wallet</Link>
-          {canIssueOrVerify && <Link href="/verify">Verify Site</Link>}
+          {/* Feature visibility is gated by org type (see lib/orgTypes) AND role;
+              the underlying APIs enforce the same rules server-side. */}
+          {showAnalytics && <Link href="/analytics">Analytics</Link>}
+          {showAnalytics && <Link href="/network">Trust Graph</Link>}
+          {showAnalytics && <span style={{ color: "var(--border)", margin: "0 1rem" }}>|</span>}
+          {showIssuer && <Link href="/issuer">Issuer Portal</Link>}
+          {showWallet && <Link href="/worker">Worker Wallet</Link>}
+          {showVerify && <Link href="/verify">Verify Site</Link>}
           {admin && <Link href="/admin">Admin</Link>}
 
           <div className="profile-container">

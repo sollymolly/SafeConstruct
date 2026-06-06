@@ -102,4 +102,69 @@ describe("CredentialRegistry", () => {
     await time.increaseTo(expiresAt + 1);
     expect(await registry.isValid(CRED_ID)).to.equal(false);
   });
+
+  describe("accreditation", () => {
+    it("grants the deployer the accreditor role", async () => {
+      const { registry, admin } = await loadFixture(deploy);
+      expect(await registry.isAccreditor(admin.address)).to.equal(true);
+    });
+
+    it("lets admin appoint/remove accreditors and blocks non-admins", async () => {
+      const { registry, outsider } = await loadFixture(deploy);
+      await expect(registry.connect(outsider).addAccreditor(outsider.address)).to.be.reverted;
+
+      await registry.addAccreditor(outsider.address);
+      expect(await registry.isAccreditor(outsider.address)).to.equal(true);
+
+      await registry.removeAccreditor(outsider.address);
+      expect(await registry.isAccreditor(outsider.address)).to.equal(false);
+    });
+
+    it("lets an accreditor accredit an issuer and records the body name", async () => {
+      const { registry, issuer } = await loadFixture(deploy);
+      await registry.accreditIssuer(issuer.address, "OSHA Training Institute");
+
+      expect(await registry.isAccredited(issuer.address)).to.equal(true);
+      const a = await registry.getAccreditation(issuer.address);
+      expect(a.accreditorName).to.equal("OSHA Training Institute");
+      expect(a.revoked).to.equal(false);
+      expect(a.exists).to.equal(true);
+    });
+
+    it("blocks non-accreditors from accrediting", async () => {
+      const { registry, issuer, outsider } = await loadFixture(deploy);
+      await expect(
+        registry.connect(outsider).accreditIssuer(issuer.address, "Fake Body")
+      ).to.be.reverted;
+    });
+
+    it("reports unaccredited issuers as not accredited", async () => {
+      const { registry, issuer } = await loadFixture(deploy);
+      expect(await registry.isAccredited(issuer.address)).to.equal(false);
+    });
+
+    it("lets the accreditor revoke accreditation and blocks outsiders", async () => {
+      const { registry, issuer, outsider } = await loadFixture(deploy);
+      await registry.accreditIssuer(issuer.address, "OSHA Training Institute");
+
+      await expect(
+        registry.connect(outsider).revokeAccreditation(issuer.address)
+      ).to.be.revertedWith("only accreditor or admin can revoke");
+
+      await registry.revokeAccreditation(issuer.address);
+      expect(await registry.isAccredited(issuer.address)).to.equal(false);
+    });
+
+    it("allows re-accreditation after revocation", async () => {
+      const { registry, issuer } = await loadFixture(deploy);
+      await registry.accreditIssuer(issuer.address, "OSHA Training Institute");
+      await registry.revokeAccreditation(issuer.address);
+      await registry.accreditIssuer(issuer.address, "State Safety Board");
+
+      expect(await registry.isAccredited(issuer.address)).to.equal(true);
+      expect((await registry.getAccreditation(issuer.address)).accreditorName).to.equal(
+        "State Safety Board"
+      );
+    });
+  });
 });

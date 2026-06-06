@@ -33,4 +33,13 @@ export type CredentialVerification = {
   issuedAt: number;
   expiresAt: number;
   status: VerificationStatus;
+  // EIP-712 proof fields (the issuer's real signature over the record).
+  dataHash: string;
+  issuerAddress: string;
+  signature: string | null;
+  signer: string | null; // address recovered from the signature
+  signatureValid: boolean; // recovered signer === issuer's wallet
+  proof: string; // encoded, shareable payload for public verification (/v?d=)
+  accredited: boolean; // issuer is vouched for by a recognized accreditation body
+  accreditorName: string | null; // the accrediting body, when accredited
 };

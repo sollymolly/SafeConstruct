@@ -52,6 +52,12 @@ model User {
 model Organization {
   id         String   @id @default(uuid())
   name       String
+  // What kind of organization this is, which gates its features:
+  //   SCHOOL    — a training provider; its issuers mint credentials.
+  //   COMPANY   — a construction company; verifies workers (does not issue).
+  //   ACCREDITOR — a recognized body that accredits schools/issuers.
+  // Validated via the OrgType union in src/lib/orgTypes.ts.
+  type       String   @default("COMPANY")
   // The code people type on sign-up / log-in to join this org. Stored normalized
   // (UPPERCASE, trimmed) and compared case-insensitively.
   joinCode   String   @unique
@@ -90,6 +96,7 @@ model Credential {
   expiresAt      DateTime? // null = never expires
   dataHash       String // keccak256 hex committed on-chain
   txHash         String? // issuing transaction hash
+  signature      String? // EIP-712 signature by the issuer's wallet over the record
   revokedAt      DateTime? // local cache; the chain is the source of truth for status
   createdAt      DateTime  @default(now())
 

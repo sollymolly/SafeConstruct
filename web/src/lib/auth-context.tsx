@@ -9,6 +9,7 @@ export type AuthUser = {
   name: string;
   role: string;
   address: string | null;
+  orgType: string | null;
 };
 
 type AuthState = {

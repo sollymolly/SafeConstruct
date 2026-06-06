@@ -1,19 +1,36 @@
 [
   {
-    "name": "Fake Construction",
+    "name": "Fake School",
     "joinCode": "FAKE-7F3K",
+    "type": "SCHOOL",
     "adminEmail": "solpark0624@gmail.com"
   },
 
   {
     "name": "Beta Builders",
     "joinCode": "BETA-57O2",
+    "type": "SCHOOL",
     "adminEmail": "admin@fake.com"
   },
 
   {
     "name": "IC3 Blockchain",
     "joinCode": "IC3B-2A4C",
+    "type": "SCHOOL",
     "adminEmail": "haroon@fake.com"
+  },
+
+  {
+    "name": "Fake Construction",
+    "joinCode": "CONS-1234",
+    "type": "COMPANY",
+    "adminEmail": "company@fake.com"
+  },
+
+  {
+    "name": "Fake Accreditor",
+    "joinCode": "ACCR-5678",
+    "type": "ACCREDITOR",
+    "adminEmail": "prove@fake.com"
   }
 ]

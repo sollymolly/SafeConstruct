@@ -3,8 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import QRCodeWidget from "../../components/QRCodeWidget";
+import { orgHasWorkerWallet } from "@/lib/orgTypes";
 
-type Me = { id: string; email: string; name: string; role: string; address: string | null } | null;
+type Me = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  address: string | null;
+  orgType: string | null;
+} | null;
 type Result = {
   credentialId: string;
   title: string;
@@ -12,6 +20,7 @@ type Result = {
   issuerOrg: string;
   expiresAt: number;
   status: string;
+  proof: string;
 };
 
 const BADGE: Record<string, string> = {
@@ -88,6 +97,21 @@ export default function WorkerPage() {
     );
   }
 
+  if (!orgHasWorkerWallet(me.orgType)) {
+    return (
+      <section className="auth-container">
+        <h1>No wallet for accreditation bodies</h1>
+        <p className="lead">
+          Accreditation bodies vouch for training providers — they don&apos;t hold worker
+          credentials, so there&apos;s no wallet here.
+        </p>
+        <Link href="/" className="card" style={{ display: "block" }}>
+          Back home →
+        </Link>
+      </section>
+    );
+  }
+
   return (
     <section className="dashboard-layout">
       <aside>
@@ -142,7 +166,20 @@ export default function WorkerPage() {
                     {c.expiresAt ? ` • Expires ${new Date(c.expiresAt * 1000).toLocaleDateString()}` : ""}
                   </small>
                 </div>
-                <span className={`badge ${BADGE[c.status] ?? ""}`}>{c.status}</span>
+                <div className="row" style={{ gap: '0.75rem' }}>
+                  {c.proof && (
+                    <a
+                      href={`/v?d=${c.proof}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="badge"
+                      style={{ border: '1px solid var(--border)', color: 'var(--text)', background: 'transparent', textDecoration: 'none' }}
+                    >
+                      Public Proof ↗
+                    </a>
+                  )}
+                  <span className={`badge ${BADGE[c.status] ?? ""}`}>{c.status}</span>
+                </div>
               </li>
             ))}
           </ul>

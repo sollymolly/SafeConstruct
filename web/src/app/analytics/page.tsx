@@ -68,12 +68,17 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
+  const [restricted, setRestricted] = useState(false);
 
   useEffect(() => {
     fetch("/api/analytics")
       .then((r) => {
         if (r.status === 401) {
           setDenied(true);
+          return null;
+        }
+        if (r.status === 403) {
+          setRestricted(true);
           return null;
         }
         return r.json();
@@ -91,6 +96,21 @@ export default function AnalyticsPage() {
         <p className="lead">Your compliance dashboard is tailored to your account.</p>
         <Link href="/login?redirect=/analytics" className="card" style={{ display: "block" }}>
           Log in →
+        </Link>
+      </section>
+    );
+  }
+
+  if (restricted) {
+    return (
+      <section className="auth-container">
+        <h1>Not available for your organization</h1>
+        <p className="lead">
+          Issuance analytics are for training providers. Construction companies use Verify Site
+          to check incoming workers.
+        </p>
+        <Link href="/" className="card" style={{ display: "block" }}>
+          Back home →
         </Link>
       </section>
     );

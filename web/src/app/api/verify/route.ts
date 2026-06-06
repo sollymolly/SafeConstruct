@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/client";
 import { hashCredential, toCredentialId } from "@/lib/hash";
-import { getCredential } from "@/lib/chain/registry";
+import { getCredential, accreditationOf } from "@/lib/chain/registry";
+import { recoverCredentialSigner } from "@/lib/chain/eip712";
+import { encodeProof } from "@/lib/proof";
+import type { Hex } from "viem";
 import type {
   CredentialRecord,
   CredentialVerification,
@@ -65,6 +68,22 @@ export async function POST(req: Request) {
       else if (expiresAt !== 0 && now > expiresAt) status = "EXPIRED";
       else status = "VERIFIED";
 
+      // Recover the EIP-712 signer and confirm it is the issuer's wallet.
+      const issuerAddress = c.issuer.wallet?.address ?? ZERO;
+      let signer: string | null = null;
+      let signatureValid = false;
+      if (c.signature) {
+        try {
+          signer = await recoverCredentialSigner(record, c.signature as Hex);
+          signatureValid = signer.toLowerCase() === issuerAddress.toLowerCase();
+        } catch {
+          signer = null;
+          signatureValid = false;
+        }
+      }
+
+      const accred = await accreditationOf(issuerAddress);
+
       return {
         credentialId: c.id,
         title: c.title,
@@ -73,6 +92,14 @@ export async function POST(req: Request) {
         issuedAt,
         expiresAt,
         status,
+        dataHash: expectedHash,
+        issuerAddress,
+        signature: c.signature ?? null,
+        signer,
+        signatureValid,
+        proof: encodeProof({ record, signature: c.signature ?? null }),
+        accredited: accred.accredited,
+        accreditorName: accred.accreditorName,
       };
     })
     );

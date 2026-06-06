@@ -43,6 +43,90 @@ export async function isIssuer(addr: Hex): Promise<boolean> {
   }) as Promise<boolean>;
 }
 
+// ---- accreditation ---------------------------------------------------------
+// A standalone ABI fragment so these calls work the moment the (re)deployed
+// contract exposes them; against an older deployment the reads simply revert and
+// are treated as "not accredited" by accreditationOf.
+const ACCREDITATION_ABI = [
+  {
+    type: "function",
+    name: "getAccreditation",
+    stateMutability: "view",
+    inputs: [{ name: "issuer", type: "address" }],
+    outputs: [
+      {
+        name: "",
+        type: "tuple",
+        components: [
+          { name: "accreditor", type: "address" },
+          { name: "accreditorName", type: "string" },
+          { name: "accreditedAt", type: "uint64" },
+          { name: "revoked", type: "bool" },
+          { name: "exists", type: "bool" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "function",
+    name: "accreditIssuer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "issuer", type: "address" },
+      { name: "accreditorName", type: "string" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "revokeAccreditation",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "issuer", type: "address" }],
+    outputs: [],
+  },
+] as const;
+
+const accredContract = () =>
+  ({ address: registryAddress(), abi: ACCREDITATION_ABI }) as const;
+
+export type IssuerAccreditation = { accredited: boolean; accreditorName: string | null };
+
+/** Resolve an issuer's accreditation; never throws (unaccredited on any error). */
+export async function accreditationOf(addr: string): Promise<IssuerAccreditation> {
+  try {
+    const a = (await publicClient.readContract({
+      ...accredContract(),
+      functionName: "getAccreditation",
+      args: [getAddress(addr as Hex)],
+    })) as { accreditorName: string; revoked: boolean; exists: boolean };
+    if (!a.exists || a.revoked) return { accredited: false, accreditorName: null };
+    return { accredited: true, accreditorName: a.accreditorName };
+  } catch {
+    return { accredited: false, accreditorName: null };
+  }
+}
+
+/** Relayer (an accreditor) vouches for an issuer under a named body. */
+export async function accreditIssuer(issuerAddress: Hex, accreditorName: string): Promise<Hex> {
+  const hash = await relayerClient().writeContract({
+    ...accredContract(),
+    functionName: "accreditIssuer",
+    args: [getAddress(issuerAddress), accreditorName],
+  });
+  await publicClient.waitForTransactionReceipt({ hash });
+  return hash;
+}
+
+export async function revokeAccreditation(issuerAddress: Hex): Promise<Hex> {
+  const hash = await relayerClient().writeContract({
+    ...accredContract(),
+    functionName: "revokeAccreditation",
+    args: [getAddress(issuerAddress)],
+  });
+  await publicClient.waitForTransactionReceipt({ hash });
+  return hash;
+}
+
 // ---- relayer/admin helpers -------------------------------------------------
 
 /**

@@ -12,6 +12,23 @@ contract CredentialRegistry is AccessControl {
     /// @dev Accounts with this role may issue and revoke credentials.
     bytes32 public constant ISSUER_ROLE = keccak256("ISSUER_ROLE");
 
+    /// @dev Recognized accreditation bodies (e.g. "OSHA Training Institute").
+    ///      They vouch that an issuer is a legitimately accredited provider — so
+    ///      a verifier can trust WHO issued a credential, not just that some
+    ///      address held ISSUER_ROLE.
+    bytes32 public constant ACCREDITOR_ROLE = keccak256("ACCREDITOR_ROLE");
+
+    struct Accreditation {
+        address accreditor;     // the ACCREDITOR_ROLE account that vouched
+        string  accreditorName; // human label of the accrediting body
+        uint64  accreditedAt;   // unix seconds
+        bool    revoked;
+        bool    exists;
+    }
+
+    /// @dev issuer address => the accreditation vouching for them.
+    mapping(address => Accreditation) private _accreditations;
+
     struct Credential {
         bytes32 dataHash;       // keccak256 of the canonical off-chain record (integrity anchor)
         address worker;         // custodial wallet the credential is bound to
@@ -37,11 +54,17 @@ contract CredentialRegistry is AccessControl {
     event CredentialRevoked(bytes32 indexed credentialId, address indexed issuer);
     event IssuerAdded(address indexed account, address indexed admin);
     event IssuerRemoved(address indexed account, address indexed admin);
+    event AccreditorAdded(address indexed account, address indexed admin);
+    event AccreditorRemoved(address indexed account, address indexed admin);
+    event IssuerAccredited(address indexed issuer, address indexed accreditor, string accreditorName);
+    event AccreditationRevoked(address indexed issuer, address indexed accreditor);
 
     constructor() {
-        // The deployer is the admin and can also issue (useful for the platform relayer).
+        // The deployer is the admin and can also issue + accredit (the platform
+        // relayer bootstraps issuers and accreditation bodies).
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ISSUER_ROLE, msg.sender);
+        _grantRole(ACCREDITOR_ROLE, msg.sender);
     }
 
     // ----------------------------------------------------------------------
@@ -60,6 +83,66 @@ contract CredentialRegistry is AccessControl {
 
     function isIssuer(address account) external view returns (bool) {
         return hasRole(ISSUER_ROLE, account);
+    }
+
+    // ----------------------------------------------------------------------
+    // Accreditation — recognized bodies vouch for issuers. The admin appoints
+    // accreditors; accreditors accredit issuers.
+    // ----------------------------------------------------------------------
+
+    function addAccreditor(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _grantRole(ACCREDITOR_ROLE, account);
+        emit AccreditorAdded(account, msg.sender);
+    }
+
+    function removeAccreditor(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revokeRole(ACCREDITOR_ROLE, account);
+        emit AccreditorRemoved(account, msg.sender);
+    }
+
+    function isAccreditor(address account) external view returns (bool) {
+        return hasRole(ACCREDITOR_ROLE, account);
+    }
+
+    /// @notice Vouch that `issuer` is an accredited provider. Overwrites any
+    ///         prior accreditation (e.g. re-accreditation after revocation).
+    function accreditIssuer(address issuer, string calldata accreditorName)
+        external
+        onlyRole(ACCREDITOR_ROLE)
+    {
+        require(issuer != address(0), "issuer is zero address");
+        _accreditations[issuer] = Accreditation({
+            accreditor: msg.sender,
+            accreditorName: accreditorName,
+            accreditedAt: uint64(block.timestamp),
+            revoked: false,
+            exists: true
+        });
+        emit IssuerAccredited(issuer, msg.sender, accreditorName);
+    }
+
+    /// @notice Revoke an issuer's accreditation. Only the accreditor that granted
+    ///         it (or an admin) may do so.
+    function revokeAccreditation(address issuer) external {
+        Accreditation storage a = _accreditations[issuer];
+        require(a.exists, "not accredited");
+        require(
+            a.accreditor == msg.sender || hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "only accreditor or admin can revoke"
+        );
+        require(!a.revoked, "already revoked");
+        a.revoked = true;
+        emit AccreditationRevoked(issuer, msg.sender);
+    }
+
+    function getAccreditation(address issuer) external view returns (Accreditation memory) {
+        return _accreditations[issuer];
+    }
+
+    /// @notice True only if the issuer has an accreditation that isn't revoked.
+    function isAccredited(address issuer) public view returns (bool) {
+        Accreditation storage a = _accreditations[issuer];
+        return a.exists && !a.revoked;
     }
 
     // ----------------------------------------------------------------------
