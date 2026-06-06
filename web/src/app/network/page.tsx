@@ -3,7 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
-type Node = { id: string; label: string; type: "issuer" | "worker"; total: number; valid: number };
+type Node = {
+  id: string;
+  label: string;
+  type: "issuer" | "worker";
+  total: number;
+  valid: number;
+  credentialed: boolean;
+};
 type Edge = {
   source: string;
   target: string;
@@ -19,6 +26,7 @@ type Data = {
   centerId: string | null;
   centerType: "issuer" | "worker";
   onChain: boolean;
+  uncredentialed: number;
   nodes: Node[];
   edges: Edge[];
 };
@@ -26,11 +34,11 @@ type Data = {
 const COPY: Record<string, { title: string; lead: string }> = {
   ADMIN: {
     title: "Workforce Trust Network",
-    lead: "Every issuer → worker credential link on your site, colored by live on-chain status.",
+    lead: "Every authority → holder credential link on your site, colored by live on-chain status.",
   },
   ISSUER: {
     title: "Your Issuance Network",
-    lead: "Workers you've credentialed and the live, on-chain health of each link.",
+    lead: "Holders you've credentialed and the live, on-chain health of each link.",
   },
   WORKER: {
     title: "My Trust Graph",
@@ -106,11 +114,15 @@ export default function NetworkGraphPage() {
   if (!data) return null;
 
   const copy = COPY[data.role] ?? COPY.WORKER;
-  const issuers = data.nodes.filter((n) => n.type === "issuer").length;
-  const workers = data.nodes.filter((n) => n.type === "worker").length;
+  const authorities = data.nodes.filter((n) => n.type === "issuer").length;
+  const holders = data.nodes.filter((n) => n.type === "worker").length;
+  const pendingHolders = data.nodes.filter((n) => n.type === "worker" && !n.credentialed);
   const flagged = data.edges.filter((e) => e.health !== "valid");
   const neighbors = data.nodes.filter((n) => n.id !== data.centerId);
-  const empty = data.edges.length === 0;
+  // In the admin (network) view, disconnected "awaiting" holders are worth
+  // drawing even with no links yet; only treat it as empty when there are no
+  // nodes at all. Ego views still hinge on having at least one link.
+  const empty = data.kind === "network" ? data.nodes.length === 0 : data.edges.length === 0;
 
   function isActive(id: string) {
     return !hovered || hovered === id;
@@ -166,8 +178,17 @@ export default function NetworkGraphPage() {
                 const isCenter = n.id === data.centerId;
                 const r = isCenter ? 24 : n.type === "issuer" ? 14 : 9;
                 const active = isActive(n.id);
-                const fill = n.type === "issuer" ? "var(--brand)" : "var(--ok)";
-                const stroke = `rgba(${EDGE_COLOR[nodeHealth(n)]}, 0.9)`;
+                // A holder with no credentials yet — a coverage gap. Draw it
+                // hollow with a dashed grey ring so it reads as "awaiting".
+                const pending = n.type === "worker" && !n.credentialed;
+                const fill = pending
+                  ? "var(--panel-2)"
+                  : n.type === "issuer"
+                    ? "var(--brand)"
+                    : "var(--ok)";
+                const stroke = pending
+                  ? "rgba(148,163,184,0.8)"
+                  : `rgba(${EDGE_COLOR[nodeHealth(n)]}, 0.9)`;
 
                 let labelX = p.x;
                 let labelY = isCenter ? p.y + r + 20 : p.y + r + 16;
@@ -195,7 +216,15 @@ export default function NetworkGraphPage() {
                     onMouseEnter={() => setHovered(n.id)}
                     onMouseLeave={() => setHovered(null)}
                   >
-                    <circle cx={p.x} cy={p.y} r={r} fill={fill} stroke={stroke} strokeWidth={3}>
+                    <circle
+                      cx={p.x}
+                      cy={p.y}
+                      r={r}
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={3}
+                      strokeDasharray={pending ? "3 3" : undefined}
+                    >
                       {isCenter && (
                         <animate attributeName="r" values={`${r};${r + 3};${r}`} dur="2.4s" repeatCount="indefinite" />
                       )}
@@ -219,11 +248,16 @@ export default function NetworkGraphPage() {
 
           <div className="graph-legend">
             <div className="row">
-              <span className="dot" style={{ background: "var(--brand)" }} /> <small>Issuer</small>
+              <span className="dot" style={{ background: "var(--brand)" }} /> <small>Authority</small>
             </div>
             <div className="row">
-              <span className="dot" style={{ background: "var(--ok)" }} /> <small>Worker</small>
+              <span className="dot" style={{ background: "var(--ok)" }} /> <small>Holder</small>
             </div>
+            {data.kind === "network" && (
+              <div className="row">
+                <span className="dot dot-pending" /> <small>Awaiting Credentials</small>
+              </div>
+            )}
             <span className="legend-sep" />
             <div className="row">
               <span className="dash" style={{ background: "var(--ok)" }} /> <small>Verified link</small>
@@ -232,7 +266,7 @@ export default function NetworkGraphPage() {
               <span className="dash" style={{ background: "var(--warn)" }} /> <small>Expired</small>
             </div>
             <div className="row">
-              <span className="dash" style={{ background: "var(--bad)" }} /> <small>Revoked / tampered</small>
+              <span className="dash" style={{ background: "var(--bad)" }} /> <small>Revoked or Tampered</small>
             </div>
           </div>
         </div>
@@ -242,12 +276,15 @@ export default function NetworkGraphPage() {
             <>
               <h3>Network Health</h3>
               <div className="metric-grid" style={{ gridTemplateColumns: "1fr 1fr", marginTop: "1rem", gap: "1rem" }}>
-                <div className="who" style={{ display: "block" }}>Issuers<div className="metric-num" style={{ fontSize: "1.8rem" }}>{issuers}</div></div>
-                <div className="who" style={{ display: "block" }}>Workers<div className="metric-num" style={{ fontSize: "1.8rem" }}>{workers}</div></div>
+                <div className="who" style={{ display: "block" }}>Authorities<div className="metric-num" style={{ fontSize: "1.8rem" }}>{authorities}</div></div>
+                <div className="who" style={{ display: "block" }}>Holders<div className="metric-num" style={{ fontSize: "1.8rem" }}>{holders}</div></div>
                 <div className="who" style={{ display: "block" }}>Trust links<div className="metric-num" style={{ fontSize: "1.8rem" }}>{data.edges.length}</div></div>
-                <div className="who" style={{ display: "block" }}>Flagged<div className="metric-num" style={{ fontSize: "1.8rem", color: flagged.length ? "var(--bad)" : "var(--ok)" }}>{flagged.length}</div></div>
+                <div className="who" style={{ display: "block" }}>Awaiting credential<div className="metric-num" style={{ fontSize: "1.8rem", color: data.uncredentialed ? "var(--warn)" : "var(--ok)" }}>{data.uncredentialed}</div></div>
               </div>
-              <h3 style={{ marginTop: "2rem" }}>Links Needing Attention</h3>
+
+              <h3 style={{ marginTop: "2rem" }}>
+                Links Needing Attention{flagged.length > 0 ? ` (${flagged.length})` : ""}
+              </h3>
               {flagged.length === 0 ? (
                 <p className="msg" style={{ marginTop: "1rem" }}>All links verified on-chain. ✓</p>
               ) : (
@@ -271,10 +308,33 @@ export default function NetworkGraphPage() {
                   ))}
                 </div>
               )}
+
+              {pendingHolders.length > 0 && (
+                <>
+                  <h3 style={{ marginTop: "2rem" }}>Holders Awaiting Credentials ({pendingHolders.length})</h3>
+                  <div className="list" style={{ marginTop: "1rem" }}>
+                    {pendingHolders.slice(0, 12).map((n) => (
+                      <div
+                        key={n.id}
+                        className="row between"
+                        style={{ padding: "0.8rem 0", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                        onMouseEnter={() => setHovered(n.id)}
+                        onMouseLeave={() => setHovered(null)}
+                      >
+                        <div className="row" style={{ gap: "0.6rem" }}>
+                          <span className="dot dot-pending" />
+                          <div style={{ fontWeight: 600 }}>{n.label}</div>
+                        </div>
+                        <span className="badge warn">NO CREDENTIAL</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <>
-              <h3>{data.role === "ISSUER" ? "Workers You've Credentialed" : "Issuers Vouching For You"}</h3>
+              <h3>{data.role === "ISSUER" ? "Holders You've Credentialed" : "Authorities Vouching For You"}</h3>
               <p className="who" style={{ marginTop: "0.5rem" }}>
                 {neighbors.length} connection{neighbors.length === 1 ? "" : "s"}
                 {data.onChain ? " • verified on-chain" : " • DB fallback"}

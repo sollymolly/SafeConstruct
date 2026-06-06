@@ -5,6 +5,23 @@ import type { CredentialRecord, VerificationStatus } from "@/types/credential";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
+/**
+ * The set of credentials a given user is allowed to see, as a Prisma `where`.
+ * Issuers see what they issued; workers see what they hold; admins see only the
+ * credentials of workers within their OWN organization (no cross-org overlap).
+ * A break-glass admin with no org is scoped to themselves rather than everyone.
+ */
+export function credentialScope(me: {
+  id: string;
+  role: string;
+  organizationId: string | null;
+}): Prisma.CredentialWhereInput {
+  if (me.role === "ISSUER") return { issuerId: me.id };
+  if (me.role === "WORKER") return { workerId: me.id };
+  if (me.organizationId) return { worker: { organizationId: me.organizationId } };
+  return { workerId: me.id };
+}
+
 export type CredentialWithParties = Prisma.CredentialGetPayload<{
   include: {
     worker: { include: { wallet: true } };

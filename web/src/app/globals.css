@@ -612,6 +612,11 @@ button.ghost:hover:not(:disabled) {
   flex-shrink: 0;
 }
 
+.dot-pending {
+  background: var(--panel-2);
+  border: 1.5px dashed rgba(148, 163, 184, 0.8);
+}
+
 .dash {
   width: 18px;
   height: 4px;
