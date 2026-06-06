@@ -75,6 +75,7 @@ contract CredentialRegistry is AccessControl {
         uint64 expiresAt
     ) external onlyRole(ISSUER_ROLE) {
         require(worker != address(0), "worker is zero address");
+        require(worker != msg.sender, "cannot issue to self");
         require(dataHash != bytes32(0), "dataHash is empty");
         require(!_credentials[credentialId].exists, "credential already exists");
 

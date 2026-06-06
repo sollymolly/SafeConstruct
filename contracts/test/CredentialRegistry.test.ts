@@ -68,6 +68,14 @@ describe("CredentialRegistry", () => {
     ).to.be.reverted;
   });
 
+  it("blocks an issuer from issuing a credential to themselves", async () => {
+    const { registry, issuer } = await loadFixture(deploy);
+    await registry.addIssuer(issuer.address);
+    await expect(
+      registry.connect(issuer).issueCredential(CRED_ID, issuer.address, DATA_HASH, TYPE, 0)
+    ).to.be.revertedWith("cannot issue to self");
+  });
+
   it("lets the issuer revoke, blocks others, and marks the credential invalid", async () => {
     const { registry, issuer, worker, outsider } = await loadFixture(deploy);
     await registry.addIssuer(issuer.address);
