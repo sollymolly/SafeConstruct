@@ -3,12 +3,20 @@ import { CREDENTIAL_REGISTRY_ABI, CREDENTIAL_REGISTRY_ADDRESS } from "./generate
 import { publicClient, relayerClient, walletClientFor, IS_LOCAL } from "./client";
 
 function registryAddress(): Hex {
-  if (!CREDENTIAL_REGISTRY_ADDRESS) {
+  // The address is chain-specific, but generated.ts holds only ONE value — written
+  // by whichever `deploy:*` ran last. So an env override takes precedence: set
+  // CREDENTIAL_REGISTRY_ADDRESS per environment (e.g. the Base Sepolia address on
+  // Vercel) and production is immune to a local `deploy:local` clobbering the file.
+  // Falls back to the generated constant for local dev, where deploy:local keeps it
+  // in sync automatically.
+  const fromEnv = process.env.CREDENTIAL_REGISTRY_ADDRESS?.trim();
+  const address = fromEnv || CREDENTIAL_REGISTRY_ADDRESS;
+  if (!address) {
     throw new Error(
-      "CredentialRegistry address is empty — deploy the contract first: `npm run contracts:deploy:local`."
+      "CredentialRegistry address is empty — set CREDENTIAL_REGISTRY_ADDRESS, or deploy: `npm run contracts:deploy:local`."
     );
   }
-  return CREDENTIAL_REGISTRY_ADDRESS as Hex;
+  return address as Hex;
 }
 
 const contract = () =>
