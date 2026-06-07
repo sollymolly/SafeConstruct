@@ -131,7 +131,7 @@ export default function WorkerPage() {
             </div>
             <div>
               <small>On-Chain Address</small>
-              <div className="who" style={{ marginTop: "0.25rem"}}>
+              <div className="who" style={{ marginTop: "0.25rem", fontSize: "0.7rem", wordBreak: "break-all" }}>
                   {me.address ? me.address : "Unassigned / Pending"}
                 </div>
             </div>
