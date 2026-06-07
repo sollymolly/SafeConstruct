@@ -31,6 +31,7 @@
     "name": "Fake Accreditor",
     "joinCode": "ACCR-5678",
     "type": "ACCREDITOR",
-    "adminEmail": "prove@fake.com"
+    "adminEmail": "prove@fake.com",
+    "accreditationCategory": "OSHA"
   }
 ]

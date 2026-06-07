@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import type { UserWithWallet } from "@/lib/users";
+import { orgCanIssue } from "@/lib/orgTypes";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs"; // uses Prisma + Supabase server client
@@ -9,20 +10,35 @@ export const runtime = "nodejs"; // uses Prisma + Supabase server client
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function publicUser(u: UserWithWallet) {
+  // The schools (training providers) the user belongs to: their primary org if
+  // it's a school, plus every school they've joined. Deduped, since the primary
+  // org can also appear as a membership row. A worker can train at several
+  // schools — this drives the Training Providers list on /profile and /worker.
+  const schools = new Map<string, string>();
+  if (u.organization && orgCanIssue(u.organization.type)) {
+    schools.set(u.organization.id, u.organization.name);
+  }
+  for (const m of u.schoolMemberships ?? []) {
+    schools.set(m.organization.id, m.organization.name);
+  }
+
   return {
     id: u.id,
     email: u.email,
     name: u.name,
     role: u.role,
     address: u.wallet?.address ?? null,
-    // The org the account belongs to (null only for legacy/shadow rows not yet
-    // bound). The client uses this to show membership and gate the org switch.
+    // The primary org the account belongs to — a worker's single company (null
+    // only for legacy/shadow rows not yet bound). The client uses this to show
+    // membership and gate the org switch.
     organization: u.organization
       ? { id: u.organization.id, name: u.organization.name, type: u.organization.type }
       : null,
     // Convenience mirror of the org type so callers can gate features without
     // digging into the organization object.
     orgType: u.organization?.type ?? null,
+    // Every school the user belongs to (primary-if-school ∪ memberships).
+    schools: [...schools].map(([id, name]) => ({ id, name })),
   };
 }
 
@@ -103,7 +119,11 @@ export async function PATCH(req: Request) {
   const updated = await prisma.user.update({
     where: { id: me.id },
     data: { email },
-    include: { wallet: true, organization: true },
+    include: {
+      wallet: true,
+      organization: true,
+      schoolMemberships: { include: { organization: true } },
+    },
   });
 
   return NextResponse.json({ user: publicUser(updated) });

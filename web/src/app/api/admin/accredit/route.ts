@@ -10,9 +10,14 @@ export const runtime = "nodejs";
 
 /**
  * POST /api/admin/accredit — vouch for (or revoke) a school issuer's
- * accreditation on-chain. Only ACCREDITOR-type orgs may do this; the target must
- * be an issuing account in a training-provider (SCHOOL) org. The platform relayer
- * records the named accrediting body so verifiers can trust WHO issued.
+ * accreditation. Only ACCREDITOR-type orgs may do this; the target must be an
+ * issuing account in a training-provider (SCHOOL) org.
+ *
+ * Each accreditor grants exactly ONE credential CATEGORY — its configured
+ * Organization.accreditationCategory (e.g. our sample accreditor → "OSHA"). The
+ * grant is recorded two ways: on-chain (CredentialRegistry, for the cryptographic
+ * trust proof verifiers see) and off-chain in the Accreditation table (which
+ * category, so the issue flow can gate on it). Body: { userId, revoke? }.
  */
 export async function POST(req: Request) {
   const me = await getCurrentUser();
@@ -26,15 +31,23 @@ export async function POST(req: Request) {
     );
   }
 
-  const { userId, accreditorName, revoke } = (await req.json().catch(() => ({}))) as {
+  // The single category this accreditor grants. Seeded on the org
+  // (prisma/organizations.json → accreditationCategory). Without it there's
+  // nothing to accredit FOR.
+  const category = me.organization?.accreditationCategory?.trim().toUpperCase();
+  if (!category) {
+    return NextResponse.json(
+      { error: "Your accreditation body has no configured certification category to grant." },
+      { status: 400 }
+    );
+  }
+  const accreditorName = me.organization?.name ?? "Accreditation Body";
+
+  const { userId, revoke } = (await req.json().catch(() => ({}))) as {
     userId?: string;
-    accreditorName?: string;
     revoke?: boolean;
   };
   if (!userId) return NextResponse.json({ error: "userId is required" }, { status: 400 });
-  if (!revoke && !accreditorName?.trim()) {
-    return NextResponse.json({ error: "accreditorName is required" }, { status: 400 });
-  }
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -56,10 +69,24 @@ export async function POST(req: Request) {
   try {
     if (revoke) {
       await revokeAccreditation(user.wallet.address as Hex);
-      return NextResponse.json({ ok: true, accredited: false, accreditorName: null });
+      await prisma.accreditation.deleteMany({ where: { issuerId: user.id, category } });
+      return NextResponse.json({ ok: true, accredited: false, category, accreditorName: null });
     }
-    await accreditIssuer(user.wallet.address as Hex, accreditorName!.trim());
-    return NextResponse.json({ ok: true, accredited: true, accreditorName: accreditorName!.trim() });
+
+    await accreditIssuer(user.wallet.address as Hex, accreditorName);
+    // Record WHICH category off-chain so the issue flow can gate on it. Idempotent
+    // on (issuerId, category) — re-accrediting just refreshes the body name.
+    await prisma.accreditation.upsert({
+      where: { issuerId_category: { issuerId: user.id, category } },
+      create: {
+        issuerId: user.id,
+        category,
+        accreditorName,
+        accreditorOrgId: me.organizationId ?? null,
+      },
+      update: { accreditorName, accreditorOrgId: me.organizationId ?? null },
+    });
+    return NextResponse.json({ ok: true, accredited: true, category, accreditorName });
   } catch (err) {
     console.error("Accreditation error:", err);
     return NextResponse.json(

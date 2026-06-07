@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { canIssue } from "@/lib/roles";
 import { orgCanIssue } from "@/lib/orgTypes";
+import type { CertDef } from "@/lib/certCatalog";
 
 type Me = {
   id: string;
@@ -29,9 +30,12 @@ export default function IssuerPage() {
   const [error, setError] = useState("");
 
   const [workerEmail, setWorkerEmail] = useState("");
-  const [credentialType, setCredentialType] = useState("OSHA-30");
-  const [title, setTitle] = useState("OSHA 30-Hour Construction Safety");
+  // The certifications this issuer is accredited to mint (catalog filtered to
+  // their accredited categories) and the currently-typed/selected name.
+  const [certs, setCerts] = useState<CertDef[]>([]);
+  const [certQuery, setCertQuery] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const [txHash, setTxHash] = useState("");
   const [issued, setIssued] = useState<Cred[]>([]);
 
   useEffect(() => {
@@ -41,6 +45,11 @@ export default function IssuerPage() {
         setMe(d.user);
         setLoading(false);
       });
+    // The certs they may issue — only those their accreditation covers (fix #5/#7).
+    fetch("/api/issuer/certs")
+      .then((r) => r.json())
+      .then((d) => setCerts(d.certs ?? []))
+      .catch(() => {});
   }, []);
 
   async function loadIssuedFor(em: string) {
@@ -54,18 +63,22 @@ export default function IssuerPage() {
   e.preventDefault();
   setMsg("");
   setError("");
-  if (title.length < 5 || title.length > 100) return setError("Protocol Violation: Title must be between 5 and 100 bytes.");
-  if (credentialType.length < 2 || credentialType.length > 30) return setError("Protocol Violation: Type code exceeds maximum 30 byte threshold.");
+  setTxHash("");
+  // The credential is chosen from the accredited list — resolve the typed name to
+  // a catalog entry so we send its code + canonical title.
+  const cert = certs.find((c) => c.name === certQuery);
+  if (!cert) return setError("Choose a certification from the list.");
   setBusy(true);
   const r = await fetch("/api/credentials", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ workerEmail, credentialType, title, expiresAt: expiresAt || null }),
+    body: JSON.stringify({ workerEmail, credentialType: cert.code, title: cert.name, expiresAt: expiresAt || null }),
   });
-  const d = await r.json();
+  const d = await r.json().catch(() => ({}));
   setBusy(false);
-  if (d.error) return setError(d.error);
-  setMsg(`Credential successfully minted (Tx: ${String(d.credential.txHash).slice(0, 12)}…)`);
+  if (!r.ok || d.error) return setError(d.error || "Could not mint the credential.");
+  setMsg("Credential successfully minted to the blockchain.");
+  setTxHash(String(d.credential.txHash ?? ""));
   loadIssuedFor(workerEmail);
 }
 
@@ -151,30 +164,51 @@ export default function IssuerPage() {
               />
             </label>
             <label>
-              <div className="row between"><span>Credential Title</span><small>5-100 chars</small></div>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} minLength={5} maxLength={100} required />
+              <div className="row between">
+                <span>Certification</span>
+                <small>{certs.length > 0 ? "Search & select" : "None available"}</small>
+              </div>
+              <input
+                list="issuer-cert-options"
+                value={certQuery}
+                onChange={(e) => setCertQuery(e.target.value)}
+                placeholder={certs.length > 0 ? "Search certifications…" : "No accredited certifications"}
+                disabled={certs.length === 0}
+                autoComplete="off"
+              />
+              <datalist id="issuer-cert-options">
+                {certs.map((c) => (
+                  <option key={c.code} value={c.name}>{c.code}</option>
+                ))}
+              </datalist>
             </label>
-            <div className="row">
-              <label style={{ flex: 1 }}>
-                <div className="row between"><span>Type Code</span><small>Max 30</small></div>
-                <input
-                  value={credentialType}
-                  onChange={(e) => setCredentialType(e.target.value)}
-                  minLength={2}
-                  maxLength={30}
-                  required
-                />
-              </label>
-              <label style={{ flex: 1 }}>
-                Expiration
-                <input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
-              </label>
-            </div>
-            
-            <button disabled={busy} style={{ marginTop: '0.5rem' }}>
+            <label>
+              Expiration
+              <input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
+            </label>
+
+            {certs.length === 0 && (
+              <p className="msg error" style={{ marginTop: 0 }}>
+                You aren&apos;t accredited to issue any certifications yet. Ask an accreditation body to accredit you, then refresh this page.
+              </p>
+            )}
+
+            <button disabled={busy || certs.length === 0} style={{ marginTop: '0.5rem' }}>
               {busy ? <span className="spinner"></span> : "Mint to Blockchain"}
             </button>
-            {msg && <p className="msg">{msg}</p>}
+            {msg && (
+              <div className="msg" style={{ textAlign: "left" }}>
+                {msg}
+                {txHash && (
+                  <div style={{ marginTop: "0.6rem" }}>
+                    <small style={{ display: "block", marginBottom: "0.2rem" }}>Transaction hash</small>
+                    <code style={{ fontFamily: "monospace", fontSize: "0.78rem", wordBreak: "break-all", color: "var(--text)" }}>
+                      {txHash}
+                    </code>
+                  </div>
+                )}
+              </div>
+            )}
             {error && <p className="msg error">{error}</p>}
           </form>
         </aside>

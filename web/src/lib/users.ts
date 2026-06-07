@@ -4,13 +4,22 @@ import { createWallet } from "@/lib/wallet/custodial";
 import { isOrgAdminEmail, resolveOrgByJoinCode } from "@/lib/orgs";
 import type { Role } from "@/types/credential";
 
-// Every user is returned with their wallet AND their organization, since callers
-// (the /api/auth payload, role checks, admin scoping) need both.
+// Every user is returned with their wallet, their primary organization, AND the
+// schools they're affiliated with, since callers (the /api/auth payload, role
+// checks, admin scoping, login org checks) need all three.
 export type UserWithWallet = Prisma.UserGetPayload<{
-  include: { wallet: true; organization: true };
+  include: {
+    wallet: true;
+    organization: true;
+    schoolMemberships: { include: { organization: true } };
+  };
 }>;
 
-const withRelations = { wallet: true, organization: true } as const;
+const withRelations = {
+  wallet: true,
+  organization: true,
+  schoolMemberships: { include: { organization: true } },
+} as const;
 
 /** Prisma raises P2002 when a unique constraint (here authId/email) is violated. */
 function isUniqueViolation(e: unknown): boolean {

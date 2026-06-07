@@ -12,6 +12,9 @@ type Me = {
   role: string;
   address: string | null;
   orgType: string | null;
+  // Training providers (schools) the worker belongs to — the orgs allowed to
+  // issue credentials to them.
+  schools: { id: string; name: string }[];
 } | null;
 type Result = {
   credentialId: string;
@@ -131,6 +134,18 @@ export default function WorkerPage() {
               <div className="who" style={{ marginTop: '0.25rem' }}>
                 {me.address?.slice(0, 8)}…{me.address?.slice(-6)}
               </div>
+            </div>
+            <div>
+              <small>Training Providers</small>
+              {me.schools.length === 0 ? (
+                <div style={{ marginTop: '0.25rem', color: 'var(--muted)' }}>None yet</div>
+              ) : (
+                <div className="row" style={{ flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.4rem' }}>
+                  {me.schools.map((s) => (
+                    <span key={s.id} className="badge">{s.name}</span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

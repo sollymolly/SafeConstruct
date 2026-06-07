@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/client";
+import { getCurrentUser } from "@/lib/auth";
+import { canIssue } from "@/lib/roles";
+import { orgCanVerify } from "@/lib/orgTypes";
 import { hashCredential, toCredentialId } from "@/lib/hash";
 import { getCredential, accreditationOf } from "@/lib/chain/registry";
 import { recoverCredentialSigner } from "@/lib/chain/eip712";
@@ -26,6 +29,18 @@ export async function POST(req: Request) {
     .workerEmail?.toLowerCase();
   if (!workerEmail) return NextResponse.json({ error: "workerEmail is required" }, { status: 400 });
 
+  // Authorization (fix #11): a worker may view their OWN record; otherwise only a
+  // company's managers may verify, and only workers in their own company.
+  const me = await getCurrentUser();
+  if (!me) return NextResponse.json({ error: "not signed in" }, { status: 401 });
+  const isSelf = me.email.toLowerCase() === workerEmail;
+  if (!isSelf && (!orgCanVerify(me.organization?.type) || !canIssue(me.role))) {
+    return NextResponse.json(
+      { error: "Only your company's managers can verify worker credentials." },
+      { status: 403 }
+    );
+  }
+
   const worker = await prisma.user.findUnique({
     where: { email: workerEmail },
     include: {
@@ -36,6 +51,15 @@ export async function POST(req: Request) {
 
   if (!worker || !worker.wallet) {
     return NextResponse.json({ worker: null, results: [] });
+  }
+
+  // A company manager can only verify workers employed by their OWN company —
+  // a worker's company is their primary org (workers checking themselves are exempt).
+  if (!isSelf && worker.organizationId !== me.organizationId) {
+    return NextResponse.json(
+      { error: "This worker isn't part of your company." },
+      { status: 403 }
+    );
   }
 
   const now = Math.floor(Date.now() / 1000);

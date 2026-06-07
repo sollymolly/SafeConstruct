@@ -1,14 +1,17 @@
 import type { Prisma } from "@prisma/client";
 import { hashCredential, toCredentialId } from "@/lib/hash";
 import { getCredential } from "@/lib/chain/registry";
+import { orgMemberFilter } from "@/lib/memberships";
 import type { CredentialRecord, VerificationStatus } from "@/types/credential";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
 /**
  * The set of credentials a given user is allowed to see, as a Prisma `where`.
- * Issuers see what they issued; workers see what they hold; admins see only the
- * credentials of workers within their OWN organization (no cross-org overlap).
+ * Issuers see what they issued; workers see what they hold; admins see the
+ * credentials of workers who belong to their OWN organization — primary-org
+ * members AND, for a school, workers enrolled via a school membership (so a
+ * training provider sees everyone it has trained, not just its primary members).
  * A break-glass admin with no org is scoped to themselves rather than everyone.
  */
 export function credentialScope(me: {
@@ -18,7 +21,7 @@ export function credentialScope(me: {
 }): Prisma.CredentialWhereInput {
   if (me.role === "ISSUER") return { issuerId: me.id };
   if (me.role === "WORKER") return { workerId: me.id };
-  if (me.organizationId) return { worker: { organizationId: me.organizationId } };
+  if (me.organizationId) return { worker: orgMemberFilter(me.organizationId) };
   return { workerId: me.id };
 }
 

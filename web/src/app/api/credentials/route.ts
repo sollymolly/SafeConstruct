@@ -5,7 +5,8 @@ import { prisma } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import { canIssue } from "@/lib/roles";
 import { orgCanIssue } from "@/lib/orgTypes";
-import { findOrCreateUser } from "@/lib/users";
+import { userBelongsToOrg } from "@/lib/memberships";
+import { categoryForCode } from "@/lib/certCatalog";
 import { decryptPrivateKey } from "@/lib/wallet/custodial";
 import { hashCredential, toCredentialId } from "@/lib/hash";
 import { ensureGas, ensureIssuerRole, issueCredential } from "@/lib/chain/registry";
@@ -60,6 +61,13 @@ export async function POST(req: Request) {
   if (!issuer.wallet) {
     return NextResponse.json({ error: "issuer has no wallet" }, { status: 500 });
   }
+  // A concrete school is required to check the worker's membership against.
+  if (!issuer.organizationId) {
+    return NextResponse.json(
+      { error: "Your account isn't attached to a training provider." },
+      { status: 403 }
+    );
+  }
 
   const { workerEmail, credentialType, title, description, expiresAt } = (await req
     .json()
@@ -78,12 +86,52 @@ export async function POST(req: Request) {
     );
   }
 
-  // Issue within your own organization: a worker created here is placed in the
-  // issuer's org, and an existing worker who belongs to a different org is refused.
-  const worker = await findOrCreateUser({
-    email: workerEmail,
-    organizationId: issuer.organizationId,
+  // Accreditation gate: an issuer may only mint credentials in a CATEGORY a
+  // recognized accreditor has cleared them for. Block entirely if they have no
+  // accreditation, and block any credentialType outside their accredited
+  // categories. (The /issuer form only offers accredited certs; this enforces it
+  // server-side regardless of the client.)
+  const accreditations = await prisma.accreditation.findMany({
+    where: { issuerId: issuer.id },
+    select: { category: true },
   });
+  if (accreditations.length === 0) {
+    return NextResponse.json(
+      {
+        error:
+          "You aren't accredited yet. An accreditation body must accredit you before you can issue credentials.",
+      },
+      { status: 403 }
+    );
+  }
+  const accreditedCategories = new Set(accreditations.map((a) => a.category.toUpperCase()));
+  const category = categoryForCode(credentialType);
+  if (!category || !accreditedCategories.has(category.toUpperCase())) {
+    return NextResponse.json(
+      {
+        error: `You're not accredited to issue "${credentialType}". Your accreditation covers: ${[...accreditedCategories].join(", ")}.`,
+      },
+      { status: 403 }
+    );
+  }
+
+  // A school can only issue to a worker who has already joined it: the worker's
+  // email must belong to this training provider first (they sign up with the
+  // school's code, or join it from /profile). So we look the worker up rather than
+  // creating them, and refuse if they're missing or not a member.
+  const worker = await prisma.user.findUnique({
+    where: { email: workerEmail.trim().toLowerCase() },
+    include: { wallet: true, schoolMemberships: true },
+  });
+  if (!worker) {
+    return NextResponse.json(
+      {
+        error:
+          "No worker account for that email yet. Ask them to sign up and join your training provider with your code, then issue.",
+      },
+      { status: 404 }
+    );
+  }
   // An issuer/admin must not issue a credential to themselves — a credential is an
   // attestation about *another* person, so self-issuance is never legitimate.
   if (worker.id === issuer.id) {
@@ -92,18 +140,19 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  if (!worker.wallet) {
-    return NextResponse.json({ error: "worker has no wallet" }, { status: 500 });
-  }
-  if (
-    issuer.organizationId &&
-    worker.organizationId &&
-    worker.organizationId !== issuer.organizationId
-  ) {
+  // Membership precondition: the worker must be part of the issuing school
+  // (their primary org or a school membership) before any credential is minted.
+  if (!userBelongsToOrg(worker, issuer.organizationId)) {
     return NextResponse.json(
-      { error: "That worker is not a part of your organization." },
+      {
+        error:
+          "That worker isn't a member of your training provider. Ask them to join with your code first.",
+      },
       { status: 403 }
     );
+  }
+  if (!worker.wallet) {
+    return NextResponse.json({ error: "worker has no wallet" }, { status: 500 });
   }
 
   const id = randomUUID();

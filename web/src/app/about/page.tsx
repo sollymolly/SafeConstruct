@@ -206,7 +206,7 @@ export default function AboutPage() {
               <div className="bio-role">Co-Founder</div>
               <p>
                   Sol focuses on the blockchain infrastructure and role-based, multi-organization access behind SafeConstruct.
-                  Sol is a Sophomore at Princeton studying Computer Science, minoring in Quantitative Economics, Quantitative Biology, and Philosophy.
+                  Sol is a Sophomore at Princeton studying Computer Science, minoring in Quantitative Economics, Computational Biology, and Philosophy.
                   Sol is an incoming Knowledge Development Engineer at Remitly and has prior experience as a Software Engineering Intern at Nirvana Carbon Solutions, working on optimization algorithms for agricultural carbon research.
               </p>
             </div>

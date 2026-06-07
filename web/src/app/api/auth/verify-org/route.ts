@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { resolveOrgByJoinCode } from "@/lib/orgs";
 import { bindUserToOrg } from "@/lib/users";
+import { userBelongsToOrg } from "@/lib/memberships";
 
 export const runtime = "nodejs"; // uses Prisma + Supabase server client
 
@@ -28,10 +29,12 @@ export async function POST(req: Request) {
     );
   }
 
-  // Already bound: the entered code must be this account's org. Strict — no
+  // Already bound: the entered code must be for an org this account belongs to —
+  // its primary org OR any school it's a member of (a worker can train at several
+  // schools, so any of their codes lets them in). Still strict otherwise: no
   // accidental cross-org access, and no silent migration at login.
   if (me.organizationId) {
-    if (me.organizationId !== org.id) {
+    if (!userBelongsToOrg(me, org.id)) {
       return NextResponse.json(
         {
           ok: false,

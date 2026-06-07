@@ -11,8 +11,12 @@ type UserRow = {
   address: string | null;
   createdAt: string;
   orgName: string | null;
+  // True only when this person's PRIMARY org is the viewer's org — role actions are
+  // limited to these (a school-membership-only worker is managed by their own org).
+  isPrimaryMember: boolean;
   accredited: boolean;
   accreditorName: string | null;
+  category: string | null;
 };
 
 type SortKey = "name" | "joined";
@@ -21,13 +25,13 @@ export default function AdminPage() {
   const [role, setRole] = useState<string | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [accreditor, setAccreditor] = useState(false);
+  // Whether the viewer may promote/demote issuers — only SCHOOL admins (fix #12).
+  const [canManageRoles, setCanManageRoles] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("name");
-  const [accreditingId, setAccreditingId] = useState<string | null>(null);
-  const [accreditorName, setAccreditorName] = useState("");
 
   async function load() {
     const me = await fetch("/api/auth")
@@ -41,6 +45,7 @@ export default function AdminPage() {
         .catch(() => ({ users: [] }));
       setUsers(d.users ?? []);
       setAccreditor(Boolean(d.viewerIsAccreditor));
+      setCanManageRoles(Boolean(d.viewerCanManageRoles));
     }
     setLoading(false);
   }
@@ -63,21 +68,23 @@ export default function AdminPage() {
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role: next } : u)));
   }
 
-  async function accredit(id: string, name: string) {
+  async function accredit(id: string) {
     setBusyId(id);
     setError("");
     const r = await fetch("/api/admin/accredit", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ userId: id, accreditorName: name }),
+      body: JSON.stringify({ userId: id }),
     });
-    const d = await r.json();
+    const d = await r.json().catch(() => ({}));
     setBusyId(null);
-    if (d.error) return setError(d.error);
-    setAccreditingId(null);
-    setAccreditorName("");
+    if (!r.ok || d.error) return setError(d.error || "Could not accredit this issuer.");
     setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, accredited: true, accreditorName: d.accreditorName } : u)),
+      prev.map((u) =>
+        u.id === id
+          ? { ...u, accredited: true, accreditorName: d.accreditorName, category: d.category }
+          : u,
+      ),
     );
   }
 
@@ -89,11 +96,11 @@ export default function AdminPage() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ userId: id, revoke: true }),
     });
-    const d = await r.json();
+    const d = await r.json().catch(() => ({}));
     setBusyId(null);
-    if (d.error) return setError(d.error);
+    if (!r.ok || d.error) return setError(d.error || "Could not revoke accreditation.");
     setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, accredited: false, accreditorName: null } : u)),
+      prev.map((u) => (u.id === id ? { ...u, accredited: false, accreditorName: null, category: null } : u)),
     );
   }
 
@@ -131,11 +138,13 @@ export default function AdminPage() {
   return (
     <section>
       <div className="search-header">
-        <h1>{accreditor ? "Accreditation" : "User Administration"}</h1>
+        <h1>{accreditor ? "Accreditation" : canManageRoles ? "User Administration" : "Workforce"}</h1>
         <p className="lead">
           {accreditor
             ? "Accredit training-provider issuers so verifiers can trust who issued a credential. Revoke accreditation at any time."
-            : "Grant or revoke issuer access. New sign-ups are workers by default — only issuers can mint on-chain credentials."}
+            : canManageRoles
+              ? "Grant or revoke issuer access. New sign-ups are workers by default — only issuers can mint on-chain credentials."
+              : "View the workers in your company. Issuer access is granted by training providers, not companies."}
         </p>
       </div>
 
@@ -197,18 +206,23 @@ export default function AdminPage() {
                 </small>
               </div>
               <div className="row" style={{ flexWrap: "wrap", justifyContent: "flex-end", gap: "0.6rem" }}>
-                {/* Accreditation status badge — shown for any issuing account. */}
+                {/* Accreditation status badge — shown for any issuing account.
+                    The chip shows the cert CATEGORY they're cleared for (e.g. OSHA). */}
                 {(u.role === "ISSUER" || (accreditor && u.role === "ADMIN")) && (
                   <span
                     className={`badge ${u.accredited ? "ok" : ""}`}
-                    title={u.accredited ? `Accredited by ${u.accreditorName}` : "Not accredited by a recognized body"}
+                    title={
+                      u.accredited
+                        ? `Accredited by ${u.accreditorName}${u.category ? ` for ${u.category}` : ""}`
+                        : "Not accredited by a recognized body"
+                    }
                     style={
                       u.accredited
                         ? undefined
                         : { background: "var(--panel-2)", color: "var(--muted)", border: "1px solid var(--border)" }
                     }
                   >
-                    {u.accredited ? `✓ ${u.accreditorName}` : "Unaccredited"}
+                    {u.accredited ? `✓ ${u.category ?? u.accreditorName}` : "Unaccredited"}
                   </span>
                 )}
 
@@ -230,60 +244,33 @@ export default function AdminPage() {
                   </span>
                 )}
 
-                {/* Own-org admins manage roles; they do NOT accredit. */}
-                {!accreditor && u.role === "WORKER" && (
+                {/* School admins manage issuer roles for their own-org members. Company
+                    admins cannot (issuing is the school's job, fix #12), and a worker
+                    who only trains here is managed by their own org (fix #4). */}
+                {canManageRoles && u.isPrimaryMember && u.role === "WORKER" && (
                   <button onClick={() => changeRole(u.id, "ISSUER")} disabled={busyId === u.id}>
                     {busyId === u.id ? <span className="spinner"></span> : "Make Issuer"}
                   </button>
                 )}
-                {!accreditor && u.role === "ISSUER" && (
+                {canManageRoles && u.isPrimaryMember && u.role === "ISSUER" && (
                   <button className="ghost" onClick={() => changeRole(u.id, "WORKER")} disabled={busyId === u.id}>
                     {busyId === u.id ? "…" : "Revoke Issuer"}
                   </button>
                 )}
 
-                {/* Accreditor admins vouch for (or revoke) school issuers. */}
-                {accreditor && accreditingId === u.id ? (
+                {/* Accreditor admins vouch for (or revoke) school issuers — each grants
+                    their body's single category, so it's one click (no name input). */}
+                {accreditor && (
                   <>
-                    <input
-                      value={accreditorName}
-                      onChange={(e) => setAccreditorName(e.target.value)}
-                      placeholder="Accrediting body (e.g. OSHA)"
-                      style={{ width: "210px" }}
-                    />
-                    <button onClick={() => accredit(u.id, accreditorName)} disabled={busyId === u.id || !accreditorName.trim()}>
-                      {busyId === u.id ? <span className="spinner"></span> : "Save"}
+                    <button onClick={() => accredit(u.id)} disabled={busyId === u.id}>
+                      {busyId === u.id ? <span className="spinner"></span> : u.accredited ? "Re-accredit" : "Accredit"}
                     </button>
-                    <button
-                      className="ghost"
-                      style={{ color: "var(--text)", borderColor: "var(--border)" }}
-                      onClick={() => {
-                        setAccreditingId(null);
-                        setAccreditorName("");
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  accreditor && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setAccreditingId(u.id);
-                          setAccreditorName(u.accreditorName ?? "");
-                        }}
-                        disabled={busyId === u.id}
-                      >
-                        {u.accredited ? "Re-accredit" : "Accredit"}
+                    {u.accredited && (
+                      <button className="ghost" onClick={() => revokeAccred(u.id)} disabled={busyId === u.id}>
+                        Revoke Accred.
                       </button>
-                      {u.accredited && (
-                        <button className="ghost" onClick={() => revokeAccred(u.id)} disabled={busyId === u.id}>
-                          Revoke Accred.
-                        </button>
-                      )}
-                    </>
-                  )
+                    )}
+                  </>
                 )}
               </div>
             </li>

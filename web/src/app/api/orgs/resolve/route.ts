@@ -18,5 +18,5 @@ export async function POST(req: Request) {
       { status: 404 }
     );
   }
-  return NextResponse.json({ id: org.id, name: org.name });
+  return NextResponse.json({ id: org.id, name: org.name, type: org.type });
 }

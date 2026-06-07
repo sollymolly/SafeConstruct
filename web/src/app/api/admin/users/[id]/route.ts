@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
+import { orgCanIssue } from "@/lib/orgTypes";
 import type { Role } from "@/types/credential";
 
 export const runtime = "nodejs";
@@ -17,6 +18,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const me = await getCurrentUser();
   if (!me || me.role !== "ADMIN") {
     return NextResponse.json({ error: "admins only" }, { status: 403 });
+  }
+  // Only training providers (schools) promote issuers — a company verifies workers,
+  // it doesn't mint, so its admins can't grant issuer access (fix #12).
+  if (!orgCanIssue(me.organization?.type)) {
+    return NextResponse.json(
+      { error: "Only training-provider admins can change issuer roles." },
+      { status: 403 }
+    );
   }
 
   const { id } = await params;

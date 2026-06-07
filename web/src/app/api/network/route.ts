@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import { orgHasAnalytics } from "@/lib/orgTypes";
+import { orgMemberFilter } from "@/lib/memberships";
 import {
   credentialInclude,
   credentialScope,
@@ -103,7 +104,7 @@ export async function GET() {
   let uncredentialed = 0;
   if (kind === "network" && me.organizationId) {
     const orgWorkers = await prisma.user.findMany({
-      where: { organizationId: me.organizationId, role: "WORKER" },
+      where: { ...orgMemberFilter(me.organizationId), role: "WORKER" },
       select: { id: true, name: true },
     });
     for (const w of orgWorkers) {

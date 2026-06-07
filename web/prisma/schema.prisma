@@ -41,6 +41,14 @@ model User {
   wallet              Wallet?
   issuedCredentials   Credential[] @relation("Issuer")
   receivedCredentials Credential[] @relation("Worker")
+  // The SCHOOLs (training providers) this user is additionally affiliated with.
+  // organizationId above is the single "primary" org (a worker's one company);
+  // these are the many schools they can receive credentials from. See
+  // SchoolMembership and src/lib/memberships.ts.
+  schoolMemberships   SchoolMembership[]
+  // Off-chain accreditations granted to this user as an ISSUER — the credential
+  // categories they're cleared to issue. Source of truth for issue-time gating.
+  accreditations      Accreditation[]
 
   @@index([organizationId])
 }
@@ -58,6 +66,10 @@ model Organization {
   //   ACCREDITOR — a recognized body that accredits schools/issuers.
   // Validated via the OrgType union in src/lib/orgTypes.ts.
   type       String   @default("COMPANY")
+  // For ACCREDITOR orgs only: the single credential CATEGORY this body can grant
+  // (e.g. "OSHA"). Issuers it accredits may then issue certs in this category.
+  // See src/lib/certCatalog.ts and the Accreditation model below.
+  accreditationCategory String?
   // The code people type on sign-up / log-in to join this org. Stored normalized
   // (UPPERCASE, trimmed) and compared case-insensitively.
   joinCode   String   @unique
@@ -66,7 +78,50 @@ model Organization {
   adminEmail String?
   createdAt  DateTime @default(now())
 
-  users User[]
+  users        User[]
+  // Workers affiliated with this org as a school (only ever populated for
+  // SCHOOL-type orgs). A worker's primary membership stays on User.organizationId.
+  schoolMembers SchoolMembership[]
+}
+
+// A worker's affiliation with a SCHOOL (training provider) beyond their single
+// primary org. This is what lets one worker belong to MANY schools (so each can
+// issue credentials to them) while still belonging to exactly one company via
+// User.organizationId. Created when a school issues to the worker (auto-enroll)
+// or when the worker joins with the school's code (/profile). School-only by
+// convention — enforced in src/lib/memberships.ts, not in the schema.
+model SchoolMembership {
+  id             String       @id @default(uuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  // One membership row per (worker, school) — makes enrollment idempotent.
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+// An off-chain record that an ISSUER is accredited to issue a given credential
+// CATEGORY (e.g. "OSHA"), granted by an ACCREDITOR org. The on-chain accreditation
+// (CredentialRegistry) carries the cryptographic trust proof shown to verifiers;
+// this table records WHICH category — the contract doesn't store that — so the
+// issue flow can gate on it (see src/lib/certCatalog.ts). Each accreditor grants
+// exactly one category, so one issuer can hold several rows (one per accreditor).
+model Accreditation {
+  id              String   @id @default(uuid())
+  issuerId        String
+  issuer          User     @relation(fields: [issuerId], references: [id], onDelete: Cascade)
+  category        String   // credential category the issuer may issue, e.g. "OSHA"
+  accreditorName  String   // display name of the accrediting body
+  accreditorOrgId String?  // the ACCREDITOR org that granted it, when known
+  createdAt       DateTime @default(now())
+
+  // One row per (issuer, category) — re-accrediting is idempotent.
+  @@unique([issuerId, category])
+  @@index([issuerId])
 }
 
 // One custodial wallet per user. The private key is encrypted at rest

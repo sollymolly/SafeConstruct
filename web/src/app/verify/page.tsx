@@ -49,6 +49,7 @@ export default function VerifyPage() {
   const [worker, setWorker] = useState<Worker>(null);
   const [results, setResults] = useState<Result[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const [auditCred, setAuditCred] = useState<Result | null>(null);
 
   useEffect(() => {
@@ -64,13 +65,20 @@ export default function VerifyPage() {
   async function fetchRecord(targetEmail: string) {
     setBusy(true);
     setResults(null);
+    setError("");
     const r = await fetch("/api/verify", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ workerEmail: targetEmail }),
     });
-    const d = await r.json();
+    const d = await r.json().catch(() => ({}));
     setBusy(false);
+    if (!r.ok) {
+      setWorker(null);
+      setResults([]);
+      setError(d.error ?? "Could not verify this worker right now.");
+      return;
+    }
     setWorker(d.worker);
     setResults(d.results ?? []);
   }
@@ -156,6 +164,8 @@ export default function VerifyPage() {
         </form>
 
         <CameraScanner onSimulateScan={() => { setEmail("worker@example.com"); fetchRecord("worker@example.com"); }} />
+
+        {error && <p className="msg error" style={{ marginTop: '1.5rem' }}>{error}</p>}
       </div>
 
       {results && (

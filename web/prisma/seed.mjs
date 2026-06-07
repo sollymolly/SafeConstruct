@@ -62,6 +62,10 @@ async function main() {
     const adminEmail = def.adminEmail
       ? String(def.adminEmail).trim().toLowerCase()
       : null;
+    // For ACCREDITOR orgs: the single credential category they grant (e.g. "OSHA").
+    const accreditationCategory = def.accreditationCategory
+      ? String(def.accreditationCategory).trim().toUpperCase()
+      : null;
 
     if (!name || !joinCode) {
       console.warn("Skipping invalid org entry (need name + joinCode):", def);
@@ -70,8 +74,8 @@ async function main() {
 
     const org = await prisma.organization.upsert({
       where: { joinCode },
-      update: { name, type, adminEmail },
-      create: { name, joinCode, type, adminEmail },
+      update: { name, type, adminEmail, accreditationCategory },
+      create: { name, joinCode, type, adminEmail, accreditationCategory },
     });
     console.log(
       `✓ ${org.name} [${org.type}]  —  join code ${org.joinCode}  —  admin ${org.adminEmail ?? "(none)"}`
