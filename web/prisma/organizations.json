@@ -17,7 +17,14 @@
     "name": "IC3 Blockchain",
     "joinCode": "IC3B-2A4C",
     "type": "SCHOOL",
-    "adminEmail": "haroon@fake.com"
+    "adminEmail": "head@fake.com"
+  },
+
+  {
+    "name": "IC3 Construction",
+    "joinCode": "IC3C-2A4C",
+    "type": "COMPANY",
+    "adminEmail": "manager@fake.com"
   },
 
   {
