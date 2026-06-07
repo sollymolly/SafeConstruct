@@ -28,6 +28,45 @@ function normalizeType(raw) {
   return ORG_TYPES.includes(t) ? t : "COMPANY";
 }
 
+/** Global break-glass admins (ADMIN_EMAILS env) — never demoted by reconciliation. */
+function globalAdminEmails() {
+  return (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/**
+ * Make User.role match the org's configured adminEmail. The app reads User.role,
+ * not Organization.adminEmail, and the login path only ever PROMOTES to ADMIN —
+ * it never demotes. So when an org's admin changes, the old admin would keep their
+ * ADMIN role forever. This reconciles both directions for users whose PRIMARY org
+ * is this one: promote the configured admin (and any global admins) already in the
+ * org, and demote any stale ADMIN who is no longer entitled.
+ */
+async function reconcileOrgAdmin(org, adminEmail) {
+  const entitled = [
+    ...new Set([adminEmail, ...globalAdminEmails()].filter(Boolean)),
+  ];
+  if (entitled.length) {
+    await prisma.user.updateMany({
+      where: { organizationId: org.id, email: { in: entitled } },
+      data: { role: "ADMIN" },
+    });
+  }
+  const { count } = await prisma.user.updateMany({
+    where: {
+      organizationId: org.id,
+      role: "ADMIN",
+      ...(entitled.length ? { NOT: { email: { in: entitled } } } : {}),
+    },
+    data: { role: "WORKER" },
+  });
+  if (count > 0) {
+    console.log(`  ↳ demoted ${count} stale admin(s) in ${org.name}`);
+  }
+}
+
 function loadOrgDefs() {
   const fromEnv = process.env.SEED_ORGS_JSON;
   if (fromEnv) {
@@ -77,6 +116,9 @@ async function main() {
       update: { name, type, adminEmail, accreditationCategory },
       create: { name, joinCode, type, adminEmail, accreditationCategory },
     });
+    // Keep User.role in sync with the (possibly changed) adminEmail — the app
+    // checks User.role, and login only promotes, so a changed admin needs this.
+    await reconcileOrgAdmin(org, adminEmail);
     console.log(
       `✓ ${org.name} [${org.type}]  —  join code ${org.joinCode}  —  admin ${org.adminEmail ?? "(none)"}`
     );
