@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Organization } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import type { UserWithWallet } from "@/lib/users";
@@ -9,7 +10,16 @@ export const runtime = "nodejs"; // uses Prisma + Supabase server client
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function publicUser(u: UserWithWallet) {
+function publicUser(
+  u: UserWithWallet & { activeOrganization?: Organization | null; activeRole?: string }
+) {
+  // The org this session is acting as (the one whose code they logged in with),
+  // falling back to their primary org. This drives feature gating (issuer vs
+  // worker/verify) so the login code determines the dashboard — issue #3.
+  const active = u.activeOrganization ?? u.organization;
+  // The role the user holds IN the active org — what the client gates on. Falls
+  // back to the global role (e.g. on the PATCH path, which has no active context).
+  const role = u.activeRole ?? u.role;
   // The schools (training providers) the user belongs to: their primary org if
   // it's a school, plus every school they've joined. Deduped, since the primary
   // org can also appear as a membership row. A worker can train at several
@@ -26,7 +36,9 @@ function publicUser(u: UserWithWallet) {
     id: u.id,
     email: u.email,
     name: u.name,
-    role: u.role,
+    // The role IN the active org, so the client renders for the login context
+    // (issuer at a school, worker at a company) — issue #3.
+    role,
     address: u.wallet?.address ?? null,
     // The primary org the account belongs to — a worker's single company (null
     // only for legacy/shadow rows not yet bound). The client uses this to show
@@ -34,9 +46,10 @@ function publicUser(u: UserWithWallet) {
     organization: u.organization
       ? { id: u.organization.id, name: u.organization.name, type: u.organization.type }
       : null,
-    // Convenience mirror of the org type so callers can gate features without
-    // digging into the organization object.
-    orgType: u.organization?.type ?? null,
+    // The ACTIVE org's type (what the session is acting as) — what the navbar and
+    // pages gate on. `organization` above stays the primary company so /profile
+    // still shows the right employer; only feature gating follows the active org.
+    orgType: active?.type ?? null,
     // Every school the user belongs to (primary-if-school ∪ memberships).
     schools: [...schools].map(([id, name]) => ({ id, name })),
   };

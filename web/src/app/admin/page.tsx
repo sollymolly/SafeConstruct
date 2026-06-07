@@ -244,15 +244,17 @@ export default function AdminPage() {
                   </span>
                 )}
 
-                {/* School admins manage issuer roles for their own-org members. Company
-                    admins cannot (issuing is the school's job, fix #12), and a worker
-                    who only trains here is managed by their own org (fix #4). */}
-                {canManageRoles && u.isPrimaryMember && u.role === "WORKER" && (
+                {/* School admins manage issuer roles for everyone who belongs to the
+                    school — primary members AND workers who train here via a school
+                    membership (their company role is untouched; the role change is
+                    scoped to this school, issue #3). Company admins can't (issuing is
+                    the school's job, fix #12) — gated by canManageRoles. */}
+                {canManageRoles && u.role === "WORKER" && (
                   <button onClick={() => changeRole(u.id, "ISSUER")} disabled={busyId === u.id}>
                     {busyId === u.id ? <span className="spinner"></span> : "Make Issuer"}
                   </button>
                 )}
-                {canManageRoles && u.isPrimaryMember && u.role === "ISSUER" && (
+                {canManageRoles && u.role === "ISSUER" && (
                   <button className="ghost" onClick={() => changeRole(u.id, "WORKER")} disabled={busyId === u.id}>
                     {busyId === u.id ? "…" : "Revoke Issuer"}
                   </button>

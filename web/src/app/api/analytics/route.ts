@@ -19,11 +19,14 @@ const TYPE_COLORS = ["var(--brand)", "var(--ok)", "var(--warn)", "#8b5cf6", "#38
 export async function GET() {
   const me = await getCurrentUser();
   if (!me) return NextResponse.json({ error: "not signed in" }, { status: 401 });
-  if (!orgHasAnalytics(me.organization?.type)) {
+  // Gate and scope on the org the session is acting as, so this matches what the
+  // navbar shows for the active login (issue #3).
+  const activeOrg = me.activeOrganization;
+  if (!orgHasAnalytics(activeOrg?.type)) {
     return NextResponse.json({ error: "not available for this organization type" }, { status: 403 });
   }
 
-  const where = credentialScope(me);
+  const where = credentialScope({ id: me.id, role: me.activeRole, organizationId: activeOrg?.id ?? null });
 
   const creds = (await prisma.credential.findMany({
     where,
@@ -100,7 +103,7 @@ export async function GET() {
   const complianceRate = total === 0 ? 0 : Math.round((valid / total) * 100);
 
   return NextResponse.json({
-    role: me.role,
+    role: me.activeRole,
     name: me.name,
     metrics: {
       total,

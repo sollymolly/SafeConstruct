@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { ACTIVE_ORG_COOKIE, getCurrentUser } from "@/lib/auth";
 import { resolveOrgByJoinCode } from "@/lib/orgs";
 import { migrateUserToOrg } from "@/lib/users";
 import { ensureSchoolMembership } from "@/lib/memberships";
@@ -50,12 +50,26 @@ export async function POST(req: Request) {
 
   // If their current primary org is a SCHOOL, keep it as a school membership
   // before moving — changing companies shouldn't drop a training provider they
-  // belong to. ensureSchoolMembership no-ops when the current org isn't a school
-  // (e.g. moving between companies), so this is safe to call unconditionally.
+  // belong to, NOR the role they held there. Carry their current role onto the
+  // membership so an ISSUER at that school stays an issuer there after the switch
+  // (their global role still resets to WORKER for the new company). No-ops when
+  // the current org isn't a school, so it's safe to call unconditionally.
   if (me.organizationId) {
-    await ensureSchoolMembership(me.id, me.organizationId);
+    await ensureSchoolMembership(me.id, me.organizationId, me.role);
   }
 
   await migrateUserToOrg(me.id, me.email, org);
-  return NextResponse.json({ ok: true, organization: { id: org.id, name: org.name } });
+  // The new company becomes the session's active org, so the dashboard switches to
+  // it immediately (rather than lingering on the previous org's context).
+  const res = NextResponse.json({
+    ok: true,
+    organization: { id: org.id, name: org.name },
+  });
+  res.cookies.set(ACTIVE_ORG_COOKIE, org.id, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+  return res;
 }

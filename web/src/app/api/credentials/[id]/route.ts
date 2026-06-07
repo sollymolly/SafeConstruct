@@ -12,7 +12,10 @@ export const runtime = "nodejs";
 /** DELETE /api/credentials/:id (issuer only) → revoke a credential on-chain. */
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const issuer = await getCurrentUser();
-  if (!issuer || !canIssue(issuer.role) || !issuer.wallet) {
+  // Gate on the role in the ACTIVE org, matching the issue flow: a user who issues
+  // at a school (but is a worker at their company) can revoke only while logged
+  // into the school (issue #3). The issuerId check below still ties it to them.
+  if (!issuer || !canIssue(issuer.activeRole) || !issuer.wallet) {
     return NextResponse.json({ error: "must be signed in as an issuer" }, { status: 403 });
   }
 

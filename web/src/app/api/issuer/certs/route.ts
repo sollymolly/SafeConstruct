@@ -15,7 +15,8 @@ export const runtime = "nodejs";
  */
 export async function GET() {
   const me = await getCurrentUser();
-  if (!me || !canIssue(me.role) || !orgCanIssue(me.organization?.type)) {
+  // Gate on the role + org the session is acting as, matching the issue flow (#3).
+  if (!me || !canIssue(me.activeRole) || !orgCanIssue(me.activeOrganization?.type)) {
     return NextResponse.json({ certs: [], categories: [] });
   }
   const rows = await prisma.accreditation.findMany({

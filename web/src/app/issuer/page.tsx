@@ -26,6 +26,10 @@ export default function IssuerPage() {
   const [me, setMe] = useState<Me>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  // Which credential is currently being revoked, so only THAT row shows
+  // "Revoking…" — not every credential in the list (issue #2). Minting (busy)
+  // and revoking are tracked separately so one never spills onto the other.
+  const [revokingId, setRevokingId] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
 
@@ -83,10 +87,13 @@ export default function IssuerPage() {
 }
 
   async function revoke(id: string) {
-    setBusy(true);
-    await fetch(`/api/credentials/${id}`, { method: "DELETE" });
-    setBusy(false);
-    loadIssuedFor(workerEmail);
+    setRevokingId(id);
+    try {
+      await fetch(`/api/credentials/${id}`, { method: "DELETE" });
+      await loadIssuedFor(workerEmail);
+    } finally {
+      setRevokingId(null);
+    }
   }
 
   if (loading) return null;
@@ -232,8 +239,12 @@ export default function IssuerPage() {
                     </small>
                   </div>
                   {!c.revokedAt ? (
-                    <button className="ghost" onClick={() => revoke(c.id)} disabled={busy}>
-                      {busy ? "Revoking..." : "Revoke"}
+                    <button
+                      className="ghost"
+                      onClick={() => revoke(c.id)}
+                      disabled={revokingId === c.id}
+                    >
+                      {revokingId === c.id ? "Revoking..." : "Revoke"}
                     </button>
                   ) : (
                     <span className="badge bad">REVOKED</span>

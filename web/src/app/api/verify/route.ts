@@ -33,8 +33,11 @@ export async function POST(req: Request) {
   // company's managers may verify, and only workers in their own company.
   const me = await getCurrentUser();
   if (!me) return NextResponse.json({ error: "not signed in" }, { status: 401 });
+  // Verification is scoped to the org the session is acting as (the code they
+  // logged in with), so a manager verifies within whichever company they're in.
+  const activeOrg = me.activeOrganization;
   const isSelf = me.email.toLowerCase() === workerEmail;
-  if (!isSelf && (!orgCanVerify(me.organization?.type) || !canIssue(me.role))) {
+  if (!isSelf && (!orgCanVerify(activeOrg?.type) || !canIssue(me.activeRole))) {
     return NextResponse.json(
       { error: "Only your company's managers can verify worker credentials." },
       { status: 403 }
@@ -55,7 +58,7 @@ export async function POST(req: Request) {
 
   // A company manager can only verify workers employed by their OWN company —
   // a worker's company is their primary org (workers checking themselves are exempt).
-  if (!isSelf && worker.organizationId !== me.organizationId) {
+  if (!isSelf && worker.organizationId !== activeOrg?.id) {
     return NextResponse.json(
       { error: "This worker isn't part of your company." },
       { status: 403 }

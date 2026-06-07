@@ -318,7 +318,7 @@ export default function ProfilePage() {
               <div style={{ marginTop: "1rem" }}>
                 <small>Blockchain Custodian Address</small>
                 <div className="who" style={{ marginTop: "0.25rem", fontSize: "0.85rem" }}>
-                  {me.address ? `${me.address.slice(0, 10)}...${me.address.slice(-8)}` : "Unassigned / Pending"}
+                  {me.address ? me.address : "Unassigned / Pending"}
                 </div>
               </div>
             </div>

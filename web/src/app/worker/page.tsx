@@ -131,9 +131,9 @@ export default function WorkerPage() {
             </div>
             <div>
               <small>On-Chain Address</small>
-              <div className="who" style={{ marginTop: '0.25rem' }}>
-                {me.address?.slice(0, 8)}…{me.address?.slice(-6)}
-              </div>
+              <div className="who" style={{ marginTop: "0.25rem"}}>
+                  {me.address ? me.address : "Unassigned / Pending"}
+                </div>
             </div>
             <div>
               <small>Training Providers</small>

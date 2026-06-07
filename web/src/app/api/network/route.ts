@@ -30,11 +30,13 @@ function healthOf(status: VerificationStatus): EdgeHealth {
 export async function GET() {
   const me = await getCurrentUser();
   if (!me) return NextResponse.json({ error: "not signed in" }, { status: 401 });
-  if (!orgHasAnalytics(me.organization?.type)) {
+  // Gate and scope on the org the session is acting as (issue #3).
+  const activeOrg = me.activeOrganization;
+  if (!orgHasAnalytics(activeOrg?.type)) {
     return NextResponse.json({ error: "not available for this organization type" }, { status: 403 });
   }
 
-  const where = credentialScope(me);
+  const where = credentialScope({ id: me.id, role: me.activeRole, organizationId: activeOrg?.id ?? null });
 
   const creds = (await prisma.credential.findMany({
     where,
@@ -90,9 +92,9 @@ export async function GET() {
     edges.set(key, e);
   }
 
-  const kind = me.role === "ADMIN" ? "network" : "ego";
+  const kind = me.activeRole === "ADMIN" ? "network" : "ego";
   const centerId = kind === "ego" ? me.id : null;
-  const centerType: "issuer" | "worker" = me.role === "ISSUER" ? "issuer" : "worker";
+  const centerType: "issuer" | "worker" = me.activeRole === "ISSUER" ? "issuer" : "worker";
 
   if (kind === "ego" && !nodes.has(me.id)) {
     nodes.set(me.id, { id: me.id, label: me.name, type: centerType, total: 0, valid: 0 });
@@ -102,9 +104,9 @@ export async function GET() {
   // credential at all. They join the graph as disconnected nodes so coverage
   // gaps are visible at a glance, not just the people already credentialed.
   let uncredentialed = 0;
-  if (kind === "network" && me.organizationId) {
+  if (kind === "network" && activeOrg) {
     const orgWorkers = await prisma.user.findMany({
-      where: { ...orgMemberFilter(me.organizationId), role: "WORKER" },
+      where: { ...orgMemberFilter(activeOrg.id), role: "WORKER" },
       select: { id: true, name: true },
     });
     for (const w of orgWorkers) {
@@ -116,7 +118,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    role: me.role,
+    role: me.activeRole,
     kind,
     centerId,
     centerType,

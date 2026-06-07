@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { ACTIVE_ORG_COOKIE, getCurrentUser } from "@/lib/auth";
 import { resolveOrgByJoinCode } from "@/lib/orgs";
 import { bindUserToOrg } from "@/lib/users";
 import { userBelongsToOrg } from "@/lib/memberships";
 
 export const runtime = "nodejs"; // uses Prisma + Supabase server client
+
+// Mark `orgId` as the org this session is acting as. The login code decides which
+// of the user's orgs is active, so the dashboard matches it (issue #3).
+function okWithActiveOrg(orgId: string) {
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set(ACTIVE_ORG_COOKIE, orgId, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+  return res;
+}
 
 /**
  * POST /api/auth/verify-org  Body: { code }
@@ -44,11 +57,11 @@ export async function POST(req: Request) {
         { status: 403 }
       );
     }
-    return NextResponse.json({ ok: true });
+    return okWithActiveOrg(org.id);
   }
 
   // Legacy/shadow account with no org yet → bind it on this first sign-in,
   // preserving any role it already had.
   await bindUserToOrg(me.id, me.email, org, me.role);
-  return NextResponse.json({ ok: true });
+  return okWithActiveOrg(org.id);
 }

@@ -13,20 +13,46 @@ import { orgCanIssue } from "@/lib/orgTypes";
  * @@unique([userId, organizationId]) makes re-enrolling a no-op. Defensive: does
  * nothing for a non-SCHOOL org, so a company can never land in this table (the
  * only company link a user has is their single User.organizationId). Used by the
- * issuer flow (auto-enroll on issue) and the /profile "join a school" action.
+ * /profile "join a school" action and to preserve a school-primary's role when a
+ * worker switches companies.
+ *
+ * `role` is the per-org role to carry onto the membership. New rows default to
+ * WORKER (a trainee joining a school); pass a role only to PRESERVE one (e.g. a
+ * user whose primary school becomes a membership on a company switch keeps the
+ * role they held there). Omitting it leaves an existing row's role untouched.
  */
 export async function ensureSchoolMembership(
   userId: string,
-  schoolOrgId: string
+  schoolOrgId: string,
+  role?: string
 ): Promise<void> {
   const org = await prisma.organization.findUnique({ where: { id: schoolOrgId } });
   // orgCanIssue(type) is true only for SCHOOL orgs — our "is a training provider" test.
   if (!org || !orgCanIssue(org.type)) return;
   await prisma.schoolMembership.upsert({
     where: { userId_organizationId: { userId, organizationId: schoolOrgId } },
-    create: { userId, organizationId: schoolOrgId },
-    update: {},
+    create: { userId, organizationId: schoolOrgId, role: role ?? "WORKER" },
+    update: role ? { role } : {},
   });
+}
+
+/**
+ * The user's effective role in org `orgId`: their global User.role when that's
+ * their primary org, otherwise the role recorded on their school membership.
+ * Falls back to the global role when no membership is found (or no org given).
+ * This is what the active-org login resolves a session's acting role from.
+ */
+export function roleForOrg(
+  user: {
+    role: string;
+    organizationId: string | null;
+    schoolMemberships?: { organizationId: string; role: string }[];
+  },
+  orgId: string | null | undefined
+): string {
+  if (!orgId || user.organizationId === orgId) return user.role;
+  const membership = (user.schoolMemberships ?? []).find((m) => m.organizationId === orgId);
+  return membership ? membership.role : user.role;
 }
 
 /** Drop a worker's affiliation with a school (the /profile "leave" action). */

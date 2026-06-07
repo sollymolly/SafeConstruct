@@ -96,6 +96,12 @@ model SchoolMembership {
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // The user's role AT THIS school (per-org role). A person's global User.role
+  // governs their primary org (their company); this governs what they are at a
+  // training provider they only belong to via membership — so someone can be a
+  // WORKER at their company yet an ISSUER at a school. WORKER | ISSUER | ADMIN.
+  // The active-org login (see src/lib/auth.ts) decides which role is in effect.
+  role           String       @default("WORKER")
   createdAt      DateTime     @default(now())
 
   // One membership row per (worker, school) — makes enrollment idempotent.

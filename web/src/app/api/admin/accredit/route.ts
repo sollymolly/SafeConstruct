@@ -21,10 +21,12 @@ export const runtime = "nodejs";
  */
 export async function POST(req: Request) {
   const me = await getCurrentUser();
-  if (!me || me.role !== "ADMIN") {
+  // Acting as the org the session logged into (issue #3).
+  const activeOrg = me?.activeOrganization;
+  if (!me || me.activeRole !== "ADMIN") {
     return NextResponse.json({ error: "admins only" }, { status: 403 });
   }
-  if (!orgCanAccredit(me.organization?.type)) {
+  if (!orgCanAccredit(activeOrg?.type)) {
     return NextResponse.json(
       { error: "Only accreditation bodies can accredit issuers." },
       { status: 403 }
@@ -34,14 +36,14 @@ export async function POST(req: Request) {
   // The single category this accreditor grants. Seeded on the org
   // (prisma/organizations.json → accreditationCategory). Without it there's
   // nothing to accredit FOR.
-  const category = me.organization?.accreditationCategory?.trim().toUpperCase();
+  const category = activeOrg?.accreditationCategory?.trim().toUpperCase();
   if (!category) {
     return NextResponse.json(
       { error: "Your accreditation body has no configured certification category to grant." },
       { status: 400 }
     );
   }
-  const accreditorName = me.organization?.name ?? "Accreditation Body";
+  const accreditorName = activeOrg?.name ?? "Accreditation Body";
 
   const { userId, revoke } = (await req.json().catch(() => ({}))) as {
     userId?: string;
@@ -51,12 +53,18 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { wallet: true, organization: true },
+    include: { wallet: true, organization: true, schoolMemberships: { select: { role: true } } },
   });
   if (!user) return NextResponse.json({ error: "user not found" }, { status: 404 });
 
   // You accredit issuers at training providers (schools), not arbitrary accounts.
-  if (!orgCanIssue(user.organization?.type) || !canIssue(user.role)) {
+  // That's anyone who issues at a school: either their PRIMARY org is a school and
+  // they hold an issuing role there, OR they issue at a school via a membership
+  // (e.g. a worker at a company who is an issuer at a school, issue #3).
+  const issuesAtSchool =
+    (orgCanIssue(user.organization?.type) && canIssue(user.role)) ||
+    user.schoolMemberships.some((m) => canIssue(m.role));
+  if (!issuesAtSchool) {
     return NextResponse.json(
       { error: "Only issuers at a training provider can be accredited." },
       { status: 400 }
@@ -82,7 +90,7 @@ export async function POST(req: Request) {
         issuerId: user.id,
         category,
         accreditorName,
-        accreditorOrgId: me.organizationId ?? null,
+        accreditorOrgId: activeOrg?.id ?? null,
       },
       update: { accreditorName, accreditorOrgId: me.organizationId ?? null },
     });

@@ -10,18 +10,24 @@ const ROLES: Role[] = ["WORKER", "ISSUER", "ADMIN"];
 
 /**
  * PATCH /api/admin/users/:id (admin only)  Body: { role }
- * Sets a user's role. Granting ISSUER only updates our DB; the on-chain
- * ISSUER_ROLE is granted lazily by ensureIssuerRole() the first time that
- * issuer mints a credential.
+ * Sets a user's role IN THE ACTIVE ORG. For a member whose primary org is this
+ * school, that's their global User.role; for someone who belongs via a school
+ * membership (e.g. a worker at a company who trains here), it's the role on that
+ * membership — so a school can make them an issuer here without touching their role
+ * at their company (issue #3). Granting ISSUER only updates our DB; the on-chain
+ * ISSUER_ROLE is granted lazily by ensureIssuerRole() the first mint.
  */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const me = await getCurrentUser();
-  if (!me || me.role !== "ADMIN") {
+  // Admin-ness is evaluated in the active org (issue #3).
+  if (!me || me.activeRole !== "ADMIN") {
     return NextResponse.json({ error: "admins only" }, { status: 403 });
   }
-  // Only training providers (schools) promote issuers — a company verifies workers,
-  // it doesn't mint, so its admins can't grant issuer access (fix #12).
-  if (!orgCanIssue(me.organization?.type)) {
+  // Acting as the org the session logged into. Only training providers (schools)
+  // promote issuers — a company verifies workers, it doesn't mint, so its admins
+  // can't grant issuer access (fix #12).
+  const activeOrg = me.activeOrganization;
+  if (!activeOrg || !orgCanIssue(activeOrg.type)) {
     return NextResponse.json(
       { error: "Only training-provider admins can change issuer roles." },
       { status: 403 }
@@ -39,15 +45,27 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "you cannot change your own admin role" }, { status: 400 });
   }
 
-  const target = await prisma.user.findUnique({ where: { id } });
+  const target = await prisma.user.findUnique({
+    where: { id },
+    include: { schoolMemberships: { where: { organizationId: activeOrg.id }, select: { id: true } } },
+  });
   if (!target) return NextResponse.json({ error: "user not found" }, { status: 404 });
 
-  // An admin can only manage members of their OWN organization. Treat a cross-org
-  // target as not found so the admin can't probe or modify other orgs' users.
-  if (target.organizationId !== me.organizationId) {
+  if (target.organizationId === activeOrg.id) {
+    // This school is the target's PRIMARY org → set their global role.
+    await prisma.user.update({ where: { id }, data: { role } });
+  } else if (target.schoolMemberships.length > 0) {
+    // They belong here via a membership → set the role on that membership only,
+    // leaving their company role (User.role) untouched.
+    await prisma.schoolMembership.updateMany({
+      where: { userId: id, organizationId: activeOrg.id },
+      data: { role },
+    });
+  } else {
+    // Not a member of the active org. Treat as not found so an admin can't probe
+    // or modify users outside their org.
     return NextResponse.json({ error: "user not found" }, { status: 404 });
   }
 
-  const updated = await prisma.user.update({ where: { id }, data: { role } });
-  return NextResponse.json({ ok: true, user: { id: updated.id, role: updated.role } });
+  return NextResponse.json({ ok: true, user: { id, role } });
 }
